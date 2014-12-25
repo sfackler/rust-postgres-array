@@ -1,0 +1,10 @@
+[package]
+name = "postgres_array"
+version = "0.1.0"
+authors = ["Steven Fackler <sfackler@gmail.com>"]
+license = "MIT"
+description = "Array support for rust-postgres"
+repository = "https://github.com/sfackler/rust-postgres-array"
+
+[dependencies]
+postgres = "0.2"
