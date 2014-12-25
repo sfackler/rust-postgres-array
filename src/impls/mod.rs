@@ -82,7 +82,11 @@ impl<T> RawFromSql for ArrayBase<Option<T>> where T: RawFromSql {
                 lower_bound: try!(raw.read_be_i32()) as int,
             });
         }
-        let nele = dim_info.iter().map(|info| info.len as uint).product();
+        let nele = if dim_info.len() == 0 {
+            0
+        } else {
+            dim_info.iter().map(|info| info.len as uint).product()
+        };
 
         let mut elements = Vec::with_capacity(nele);
         for _ in range(0, nele) {
@@ -160,6 +164,7 @@ mod test {
     use std::fmt;
 
     use postgres::{Connection, SslMode, FromSql, ToSql};
+    use ArrayBase;
 
     fn test_type<T: PartialEq+FromSql+ToSql, S: fmt::Show>(sql_type: &str, checks: &[(T, S)]) {
         let conn = Connection::connect("postgres://postgres@localhost", &SslMode::None).unwrap();
@@ -176,7 +181,6 @@ mod test {
 
     macro_rules! test_array_params {
         ($name:expr, $v1:expr, $s1:expr, $v2:expr, $s2:expr, $v3:expr, $s3:expr) => ({
-            use ArrayBase;
 
             let tests = &[(Some(ArrayBase::from_vec(vec!(Some($v1), Some($v2), None), 1)),
                           format!("'{{{},{},NULL}}'", $s1, $s2).into_string()),
@@ -255,5 +259,12 @@ mod test {
     #[test]
     fn test_float8array_params() {
         test_array_params!("FLOAT8", 0f64, "0", 1.5f64, "1.5", 0.009f64, ".009");
+    }
+
+    #[test]
+    fn test_empty_array() {
+        let conn = Connection::connect("postgres://postgres@localhost", &SslMode::None).unwrap();
+        let stmt = conn.prepare("SELECT '{}'::INT4[]").unwrap();
+        stmt.query(&[]).unwrap().next().unwrap().get::<_, ArrayBase<Option<i32>>>(0);
     }
 }

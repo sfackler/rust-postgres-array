@@ -96,8 +96,8 @@ impl<T> ArrayBase<T> {
     /// not match the number of elements specified.
     pub fn from_raw(data: Vec<T>, info: Vec<DimensionInfo>)
             -> ArrayBase<T> {
-        assert!(!info.is_empty(), "Cannot create a 0x0 array");
-        assert!(data.len() == info.iter().fold(1, |acc, i| acc * i.len),
+        assert!((data.is_empty() && info.is_empty()) ||
+                data.len() == info.iter().fold(1, |acc, i| acc * i.len),
                 "Size mismatch");
         ArrayBase {
             info: info,
