@@ -4,7 +4,7 @@ use std::iter::MultiplicativeIterator;
 
 use time::Timespec;
 use serialize::json::Json;
-use postgres::{mod, Error};
+use postgres::{self, Error};
 use postgres::types::{RawFromSql, ToSql, RawToSql, Type, Oid};
 
 use {Array, ArrayBase, DimensionInfo};

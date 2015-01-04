@@ -12,7 +12,7 @@ use std::slice;
 mod impls;
 
 /// Information about a dimension of an array
-#[deriving(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 pub struct DimensionInfo {
     /// The size of the dimension
     pub len: uint,
@@ -78,7 +78,7 @@ trait InternalMutableArray<T>: MutableArray<T> {
 }
 
 /// A multi-dimensional array
-#[deriving(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone)]
 pub struct ArrayBase<T> {
     info: Vec<DimensionInfo>,
     data: Vec<T>,
