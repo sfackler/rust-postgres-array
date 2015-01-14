@@ -1,6 +1,6 @@
 //! Multi-dimensional arrays with per-dimension specifiable lower bounds
-#![feature(slicing_syntax, globs, macro_rules)]
 #![doc(html_root_url="https://sfackler.github.io/doc")]
+#![allow(unstable)]
 
 extern crate postgres;
 extern crate time;
@@ -15,9 +15,9 @@ mod impls;
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub struct DimensionInfo {
     /// The size of the dimension
-    pub len: uint,
+    pub len: usize,
     /// The index of the first element of the dimension
-    pub lower_bound: int,
+    pub lower_bound: isize,
 }
 
 /// Specifies methods that can be performed on multi-dimensional arrays
@@ -30,7 +30,7 @@ pub trait Array<T> {
     /// ## Failure
     ///
     /// Fails if the array is one-dimensional or the index is out of bounds.
-    fn slice<'a>(&'a self, idx: int) -> ArraySlice<'a, T>;
+    fn slice<'a>(&'a self, idx: isize) -> ArraySlice<'a, T>;
 
     /// Retrieves an immutable reference to a value in this array.
     ///
@@ -38,7 +38,7 @@ pub trait Array<T> {
     /// ## Failure
     ///
     /// Fails if the array is multi-dimensional or the index is out of bounds.
-    fn get<'a>(&'a self, idx: int) -> &'a T;
+    fn get<'a>(&'a self, idx: isize) -> &'a T;
 }
 
 /// Specifies methods that can be performed on mutable multi-dimensional arrays
@@ -48,7 +48,7 @@ pub trait MutableArray<T> : Array<T> {
     /// ## Failure
     ///
     /// Fails if the array is one-dimensional or the index is out of bounds.
-    fn slice_mut<'a>(&'a mut self, idx: int) -> MutArraySlice<'a, T>;
+    fn slice_mut<'a>(&'a mut self, idx: isize) -> MutArraySlice<'a, T>;
 
     /// Retrieves a mutable reference to a value in this array.
     ///
@@ -56,25 +56,25 @@ pub trait MutableArray<T> : Array<T> {
     /// ## Failure
     ///
     /// Fails if the array is multi-dimensional or the index is out of bounds.
-    fn get_mut<'a>(&'a mut self, idx: int) -> &'a mut T;
+    fn get_mut<'a>(&'a mut self, idx: isize) -> &'a mut T;
 }
 
 #[doc(hidden)]
 trait InternalArray<T>: Array<T> {
-    fn shift_idx(&self, idx: int) -> uint {
+    fn shift_idx(&self, idx: isize) -> usize {
         let shifted_idx = idx - self.dimension_info()[0].lower_bound;
         assert!(shifted_idx >= 0 &&
-                    shifted_idx < self.dimension_info()[0].len as int,
+                    shifted_idx < self.dimension_info()[0].len as isize,
                 "Out of bounds array access");
-        shifted_idx as uint
+        shifted_idx as usize
     }
 
-    fn raw_get<'a>(&'a self, idx: uint, size: uint) -> &'a T;
+    fn raw_get<'a>(&'a self, idx: usize, size: usize) -> &'a T;
 }
 
 #[doc(hidden)]
 trait InternalMutableArray<T>: MutableArray<T> {
-    fn raw_get_mut<'a>(&'a mut self, idx: uint, size: uint) -> &'a mut T;
+    fn raw_get_mut<'a>(&'a mut self, idx: usize, size: usize) -> &'a mut T;
 }
 
 /// A multi-dimensional array
@@ -106,7 +106,7 @@ impl<T> ArrayBase<T> {
     }
 
     /// Creates a new one-dimensional array from a vector.
-    pub fn from_vec(data: Vec<T>, lower_bound: int) -> ArrayBase<T> {
+    pub fn from_vec(data: Vec<T>, lower_bound: isize) -> ArrayBase<T> {
         ArrayBase {
             info: vec!(DimensionInfo {
                 len: data.len(),
@@ -120,7 +120,7 @@ impl<T> ArrayBase<T> {
     ///
     /// For example the one-dimensional array `[1,2]` would turn into
     /// the two-dimensional array `[[1,2]]`.
-    pub fn wrap(&mut self, lower_bound: int) {
+    pub fn wrap(&mut self, lower_bound: isize) {
         self.info.insert(0, DimensionInfo {
             len: 1,
             lower_bound: lower_bound
@@ -163,7 +163,7 @@ impl<T> Array<T> for ArrayBase<T> {
         &*self.info
     }
 
-    fn slice<'a>(&'a self, idx: int) -> ArraySlice<'a, T> {
+    fn slice<'a>(&'a self, idx: isize) -> ArraySlice<'a, T> {
         assert!(self.info.len() != 1,
                 "Attempted to slice a one-dimensional array");
         ArraySlice {
@@ -172,7 +172,7 @@ impl<T> Array<T> for ArrayBase<T> {
         }
     }
 
-    fn get<'a>(&'a self, idx: int) -> &'a T {
+    fn get<'a>(&'a self, idx: isize) -> &'a T {
         assert!(self.info.len() == 1,
                 "Attempted to get from a multi-dimensional array");
         self.raw_get(self.shift_idx(idx), 1)
@@ -180,7 +180,7 @@ impl<T> Array<T> for ArrayBase<T> {
 }
 
 impl<T> MutableArray<T> for ArrayBase<T> {
-    fn slice_mut<'a>(&'a mut self, idx: int) -> MutArraySlice<'a, T> {
+    fn slice_mut<'a>(&'a mut self, idx: isize) -> MutArraySlice<'a, T> {
         assert!(self.info.len() != 1,
                 "Attempted to slice_mut into a one-dimensional array");
         MutArraySlice {
@@ -189,7 +189,7 @@ impl<T> MutableArray<T> for ArrayBase<T> {
         }
     }
 
-    fn get_mut<'a>(&'a mut self, idx: int) -> &'a mut T {
+    fn get_mut<'a>(&'a mut self, idx: isize) -> &'a mut T {
         assert!(self.info.len() == 1,
                 "Attempted to get_mut from a multi-dimensional array");
         let idx = self.shift_idx(idx);
@@ -198,13 +198,13 @@ impl<T> MutableArray<T> for ArrayBase<T> {
 }
 
 impl<T> InternalArray<T> for ArrayBase<T> {
-    fn raw_get<'a>(&'a self, idx: uint, _size: uint) -> &'a T {
+    fn raw_get<'a>(&'a self, idx: usize, _size: usize) -> &'a T {
         &self.data[idx]
     }
 }
 
 impl<T> InternalMutableArray<T> for ArrayBase<T> {
-    fn raw_get_mut<'a>(&'a mut self, idx: uint, _size: uint) -> &'a mut T {
+    fn raw_get_mut<'a>(&'a mut self, idx: usize, _size: usize) -> &'a mut T {
         &mut self.data[idx]
     }
 }
@@ -218,7 +218,7 @@ enum ArrayParent<'parent, T:'static> {
 /// An immutable slice of a multi-dimensional array
 pub struct ArraySlice<'parent, T:'static> {
     parent: ArrayParent<'parent, T>,
-    idx: uint,
+    idx: usize,
 }
 
 impl<'parent, T> Array<T> for ArraySlice<'parent, T> {
@@ -228,10 +228,10 @@ impl<'parent, T> Array<T> for ArraySlice<'parent, T> {
             ArrayParent::MutSlice(p) => p.dimension_info(),
             ArrayParent::Base(p) => p.dimension_info()
         };
-        info[1..]
+        &info[1..]
     }
 
-    fn slice<'a>(&'a self, idx: int) -> ArraySlice<'a, T> {
+    fn slice<'a>(&'a self, idx: isize) -> ArraySlice<'a, T> {
         assert!(self.dimension_info().len() != 1,
                 "Attempted to slice a one-dimensional array");
         unsafe {
@@ -242,7 +242,7 @@ impl<'parent, T> Array<T> for ArraySlice<'parent, T> {
         }
     }
 
-    fn get<'a>(&'a self, idx: int) -> &'a T {
+    fn get<'a>(&'a self, idx: isize) -> &'a T {
         assert!(self.dimension_info().len() == 1,
                 "Attempted to get from a multi-dimensional array");
         self.raw_get(self.shift_idx(idx), 1)
@@ -250,7 +250,7 @@ impl<'parent, T> Array<T> for ArraySlice<'parent, T> {
 }
 
 impl<'parent, T> InternalArray<T> for ArraySlice<'parent, T> {
-    fn raw_get<'a>(&'a self, idx: uint, size: uint) -> &'a T {
+    fn raw_get<'a>(&'a self, idx: usize, size: usize) -> &'a T {
         let size = size * self.dimension_info()[0].len;
         let idx = size * self.idx + idx;
         match self.parent {
@@ -269,7 +269,7 @@ enum MutArrayParent<'parent, T:'static> {
 /// A mutable slice of a multi-dimensional array
 pub struct MutArraySlice<'parent, T:'static> {
     parent: MutArrayParent<'parent, T>,
-    idx: uint,
+    idx: usize,
 }
 
 impl<'parent, T> Array<T> for MutArraySlice<'parent, T> {
@@ -280,10 +280,10 @@ impl<'parent, T> Array<T> for MutArraySlice<'parent, T> {
                 MutArrayParent::Base(ref p) => mem::transmute(p.dimension_info()),
             }
         };
-        info[1..]
+        &info[1..]
     }
 
-    fn slice<'a>(&'a self, idx: int) -> ArraySlice<'a, T> {
+    fn slice<'a>(&'a self, idx: isize) -> ArraySlice<'a, T> {
         assert!(self.dimension_info().len() != 1,
                 "Attempted to slice a one-dimensional array");
         unsafe {
@@ -294,7 +294,7 @@ impl<'parent, T> Array<T> for MutArraySlice<'parent, T> {
         }
     }
 
-    fn get<'a>(&'a self, idx: int) -> &'a T {
+    fn get<'a>(&'a self, idx: isize) -> &'a T {
         assert!(self.dimension_info().len() == 1,
                 "Attempted to get from a multi-dimensional array");
         self.raw_get(self.shift_idx(idx), 1)
@@ -302,7 +302,7 @@ impl<'parent, T> Array<T> for MutArraySlice<'parent, T> {
 }
 
 impl<'parent, T> MutableArray<T> for MutArraySlice<'parent, T> {
-    fn slice_mut<'a>(&'a mut self, idx: int) -> MutArraySlice<'a, T> {
+    fn slice_mut<'a>(&'a mut self, idx: isize) -> MutArraySlice<'a, T> {
         assert!(self.dimension_info().len() != 1,
                 "Attempted to slice_mut a one-dimensional array");
         unsafe {
@@ -313,7 +313,7 @@ impl<'parent, T> MutableArray<T> for MutArraySlice<'parent, T> {
         }
     }
 
-    fn get_mut<'a>(&'a mut self, idx: int) -> &'a mut T {
+    fn get_mut<'a>(&'a mut self, idx: isize) -> &'a mut T {
         assert!(self.dimension_info().len() == 1,
                 "Attempted to get_mut from a multi-dimensional array");
         let idx = self.shift_idx(idx);
@@ -322,7 +322,7 @@ impl<'parent, T> MutableArray<T> for MutArraySlice<'parent, T> {
 }
 
 impl<'parent, T> InternalArray<T> for MutArraySlice<'parent, T> {
-    fn raw_get<'a>(&'a self, idx: uint, size: uint) -> &'a T {
+    fn raw_get<'a>(&'a self, idx: usize, size: usize) -> &'a T {
         let size = size * self.dimension_info()[0].len;
         let idx = size * self.idx + idx;
         unsafe {
@@ -335,7 +335,7 @@ impl<'parent, T> InternalArray<T> for MutArraySlice<'parent, T> {
 }
 
 impl<'parent, T> InternalMutableArray<T> for MutArraySlice<'parent, T> {
-    fn raw_get_mut<'a>(&'a mut self, idx: uint, size: uint) -> &'a mut T {
+    fn raw_get_mut<'a>(&'a mut self, idx: usize, size: usize) -> &'a mut T {
         let size = size * self.dimension_info()[0].len;
         let idx = size * self.idx + idx;
         unsafe {
@@ -353,8 +353,8 @@ mod tests {
 
     #[test]
     fn test_from_vec() {
-        let a = ArrayBase::from_vec(vec!(0i, 1, 2), -1);
-        assert!([DimensionInfo { len: 3, lower_bound: -1 }][] ==
+        let a = ArrayBase::from_vec(vec!(0i32, 1, 2), -1);
+        assert!(&[DimensionInfo { len: 3, lower_bound: -1 }][] ==
                 a.dimension_info());
         assert_eq!(&0, a.get(-1));
         assert_eq!(&1, a.get(0));
@@ -364,7 +364,7 @@ mod tests {
     #[test]
     #[should_fail]
     fn test_get_2d_fail() {
-        let mut a = ArrayBase::from_vec(vec!(0i, 1, 2), -1);
+        let mut a = ArrayBase::from_vec(vec!(0i32, 1, 2), -1);
         a.wrap(1);
         a.get(1);
     }
@@ -372,7 +372,7 @@ mod tests {
     #[test]
     #[should_fail]
     fn test_2d_slice_range_fail_low() {
-        let mut a = ArrayBase::from_vec(vec!(0i, 1, 2), -1);
+        let mut a = ArrayBase::from_vec(vec!(0i32, 1, 2), -1);
         a.wrap(1);
         a.slice(0);
     }
@@ -380,14 +380,14 @@ mod tests {
     #[test]
     #[should_fail]
     fn test_2d_slice_range_fail_high() {
-        let mut a = ArrayBase::from_vec(vec!(0i, 1, 2), -1);
+        let mut a = ArrayBase::from_vec(vec!(0i32, 1, 2), -1);
         a.wrap(1);
         a.slice(2);
     }
 
     #[test]
     fn test_2d_slice_get() {
-        let mut a = ArrayBase::from_vec(vec!(0i, 1, 2), -1);
+        let mut a = ArrayBase::from_vec(vec!(0i32, 1, 2), -1);
         a.wrap(1);
         let s = a.slice(1);
         assert_eq!(&0, s.get(-1));
@@ -398,14 +398,14 @@ mod tests {
     #[test]
     #[should_fail]
     fn test_push_move_wrong_lower_bound() {
-        let mut a = ArrayBase::from_vec(vec!(1i), -1);
+        let mut a = ArrayBase::from_vec(vec!(1i32), -1);
         a.push_move(ArrayBase::from_vec(vec!(2), 0));
     }
 
     #[test]
     #[should_fail]
     fn test_push_move_wrong_dims() {
-        let mut a = ArrayBase::from_vec(vec!(1i), -1);
+        let mut a = ArrayBase::from_vec(vec!(1i32), -1);
         a.wrap(1);
         a.push_move(ArrayBase::from_vec(vec!(1, 2), -1));
     }
@@ -413,7 +413,7 @@ mod tests {
     #[test]
     #[should_fail]
     fn test_push_move_wrong_dim_count() {
-        let mut a = ArrayBase::from_vec(vec!(1i), -1);
+        let mut a = ArrayBase::from_vec(vec!(1i32), -1);
         a.wrap(1);
         let mut b = ArrayBase::from_vec(vec!(2), -1);
         b.wrap(1);
@@ -422,7 +422,7 @@ mod tests {
 
     #[test]
     fn test_push_move_ok() {
-        let mut a = ArrayBase::from_vec(vec!(1i, 2), 0);
+        let mut a = ArrayBase::from_vec(vec!(1i32, 2), 0);
         a.wrap(0);
         a.push_move(ArrayBase::from_vec(vec!(3, 4), 0));
         let s = a.slice(0);
@@ -435,7 +435,7 @@ mod tests {
 
     #[test]
     fn test_3d() {
-        let mut a = ArrayBase::from_vec(vec!(0i, 1), 0);
+        let mut a = ArrayBase::from_vec(vec!(0i32, 1), 0);
         a.wrap(0);
         a.push_move(ArrayBase::from_vec(vec!(2, 3), 0));
         a.wrap(0);
@@ -461,7 +461,7 @@ mod tests {
 
     #[test]
     fn test_mut() {
-        let mut a = ArrayBase::from_vec(vec!(1i, 2), 0);
+        let mut a = ArrayBase::from_vec(vec!(1i32, 2), 0);
         a.wrap(0);
         {
             let mut s = a.slice_mut(0);
@@ -474,14 +474,14 @@ mod tests {
     #[test]
     #[should_fail]
     fn test_base_overslice() {
-        let a = ArrayBase::from_vec(vec!(1i), 0);
+        let a = ArrayBase::from_vec(vec!(1i32), 0);
         a.slice(0);
     }
 
     #[test]
     #[should_fail]
     fn test_slice_overslice() {
-        let mut a = ArrayBase::from_vec(vec!(1i), 0);
+        let mut a = ArrayBase::from_vec(vec!(1i32), 0);
         a.wrap(0);
         let s = a.slice(0);
         s.slice(0);
