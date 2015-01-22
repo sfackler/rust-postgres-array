@@ -10,7 +10,7 @@ repository = "https://github.com/sfackler/rust-postgres-array"
 default = ["uuid"]
 
 [dependencies]
-postgres = "0.4"
+postgres = "0.5"
 rustc-serialize = "0.2"
 time = "0.1"
 

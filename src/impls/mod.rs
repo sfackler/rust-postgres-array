@@ -25,7 +25,7 @@ macro_rules! from_sql_impl {
                 check_types!(ty, $($oid),+);
 
                 match raw {
-                    Some(mut raw) => ::postgres::types::RawFromSql::raw_from_sql(&mut raw).map(Some),
+                    Some(mut raw) => ::postgres::types::RawFromSql::raw_from_sql(ty, &mut raw).map(Some),
                     None => Ok(None),
                 }
             }
@@ -70,7 +70,7 @@ macro_rules! to_sql_impl {
 mod uuid;
 
 impl<T> RawFromSql for ArrayBase<Option<T>> where T: RawFromSql {
-    fn raw_from_sql<R: Reader>(raw: &mut R) -> postgres::Result<ArrayBase<Option<T>>> {
+    fn raw_from_sql<R: Reader>(ty: &Type, raw: &mut R) -> postgres::Result<ArrayBase<Option<T>>> {
         let ndim = try!(raw.read_be_u32()) as usize;
         let _has_null = try!(raw.read_be_i32()) == 1;
         let _element_type: Oid = try!(raw.read_be_u32());
@@ -95,7 +95,8 @@ impl<T> RawFromSql for ArrayBase<Option<T>> where T: RawFromSql {
                 elements.push(None);
             } else {
                 let mut limit = LimitReader::new(raw.by_ref(), len as usize);
-                elements.push(Some(try!(RawFromSql::raw_from_sql(&mut limit))));
+                elements.push(Some(try!(RawFromSql::raw_from_sql(&ty.element_type().unwrap(),
+                                                                 &mut limit))));
                 if limit.limit() != 0 {
                     return Err(Error::BadData);
                 }
@@ -123,7 +124,7 @@ fn raw_to_array<T>(array: &ArrayBase<Option<T>>, ty: &Type) -> Vec<u8> where T: 
 
     let _ = buf.write_be_i32(array.dimension_info().len() as i32);
     let _ = buf.write_be_i32(1);
-    let _ = buf.write_be_u32(ty.member_type().to_oid());
+    let _ = buf.write_be_u32(ty.element_type().unwrap().to_oid());
 
     for info in array.dimension_info().iter() {
         let _ = buf.write_be_i32(info.len as i32);
@@ -134,7 +135,7 @@ fn raw_to_array<T>(array: &ArrayBase<Option<T>>, ty: &Type) -> Vec<u8> where T: 
         match *v {
             Some(ref val) => {
                 let mut inner_buf = vec![];
-                let _ = val.raw_to_sql(&mut inner_buf);
+                let _ = val.raw_to_sql(&ty.element_type().unwrap(), &mut inner_buf);
                 let _ = buf.write_be_i32(inner_buf.len() as i32);
                 let _ = buf.write(&*inner_buf);
             }
