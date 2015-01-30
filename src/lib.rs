@@ -1,6 +1,7 @@
 //! Multi-dimensional arrays with per-dimension specifiable lower bounds
 #![doc(html_root_url="https://sfackler.github.io/doc")]
-#![allow(unstable)]
+#![feature(core, io)]
+#![cfg_attr(test, feature(collections))]
 
 extern crate postgres;
 extern crate time;

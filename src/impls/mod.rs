@@ -1,5 +1,5 @@
-use std::io::ByRefReader;
-use std::io::util::LimitReader;
+use std::old_io::ByRefReader;
+use std::old_io::util::LimitReader;
 use std::iter::MultiplicativeIterator;
 
 use time::Timespec;
@@ -137,7 +137,7 @@ fn raw_to_array<T>(array: &ArrayBase<Option<T>>, ty: &Type) -> Vec<u8> where T: 
                 let mut inner_buf = vec![];
                 let _ = val.raw_to_sql(&ty.element_type().unwrap(), &mut inner_buf);
                 let _ = buf.write_be_i32(inner_buf.len() as i32);
-                let _ = buf.write(&*inner_buf);
+                let _ = buf.write_all(&*inner_buf);
             }
             None => {
                 let _ = buf.write_be_i32(-1);
@@ -167,7 +167,7 @@ mod test {
     use postgres::{Connection, SslMode, FromSql, ToSql};
     use ArrayBase;
 
-    fn test_type<T: PartialEq+FromSql+ToSql, S: fmt::String>(sql_type: &str, checks: &[(T, S)]) {
+    fn test_type<T: PartialEq+FromSql+ToSql, S: fmt::Display>(sql_type: &str, checks: &[(T, S)]) {
         let conn = Connection::connect("postgres://postgres@localhost", &SslMode::None).unwrap();
         for &(ref val, ref repr) in checks.iter() {
             let stmt = conn.prepare(&format!("SELECT {}::{}", *repr, sql_type)[]).unwrap();
