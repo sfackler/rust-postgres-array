@@ -1,5 +1,5 @@
 //! Multi-dimensional arrays with per-dimension specifiable lower bounds
-#![doc(html_root_url="https://sfackler.github.io/doc")]
+#![doc(html_root_url="https://sfackler.github.io/rust-postgres-array/doc")]
 #![feature(core, io)]
 #![cfg_attr(test, feature(collections))]
 
