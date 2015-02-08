@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `ArraySlice` struct in crate `postgres_array`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, ArraySlice">
+
+    <title>postgres_array::ArraySlice - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <section class="sidebar">
+        
+        <p class='location'><a href='index.html'>postgres_array</a></p><div class='block struct'><h2>Structs</h2><a class='struct ' href='struct.ArrayBase.html' title='A multi-dimensional array'>ArrayBase</a><a class='struct current' href='struct.ArraySlice.html' title='An immutable slice of a multi-dimensional array'>ArraySlice</a><a class='struct ' href='struct.DimensionInfo.html' title='Information about a dimension of an array'>DimensionInfo</a><a class='struct ' href='struct.MutArraySlice.html' title='A mutable slice of a multi-dimensional array'>MutArraySlice</a></div><div class='block trait'><h2>Traits</h2><a class='trait ' href='trait.Array.html' title='Specifies methods that can be performed on multi-dimensional arrays'>Array</a><a class='trait ' href='trait.MutableArray.html' title='Specifies methods that can be performed on mutable multi-dimensional arrays'>MutableArray</a></div>
+    </section>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='index.html'>postgres_array</a>::<wbr><a class='struct' href=''>ArraySlice</a><wbr></span><span class='out-of-band'><span id='render-detail'>
+            <a id="collapse-all" href="#">[-]
+            </a>&nbsp;<a id="expand-all" href="#">[+]</a>
+        </span><a id='src-4638' href='../src/postgres_array/lib.rs.html#220-223'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct ArraySlice&lt;'parent, T: 'static&gt; {
+    // some fields omitted
+}</pre><div class='docblock'><p>An immutable slice of a multi-dimensional array</p>
+</div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl&lt;'parent, T&gt; <a class='trait' href='../postgres_array/trait.Array.html' title='postgres_array::Array'>Array</a>&lt;T&gt; for <a class='struct' href='../postgres_array/struct.ArraySlice.html' title='postgres_array::ArraySlice'>ArraySlice</a>&lt;'parent, T&gt;</code></h3><div class='impl-items'><h4 id='method.dimension_info' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.dimension_info' class='fnname'>dimension_info</a>&lt;'a&gt;(&amp;'a self) -&gt; <a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;'a [</a><a class='struct' href='../postgres_array/struct.DimensionInfo.html' title='postgres_array::DimensionInfo'>DimensionInfo</a><a href='http://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+<h4 id='method.slice' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.slice' class='fnname'>slice</a>&lt;'a&gt;(&amp;'a self, idx: <a href='http://doc.rust-lang.org/nightly/std/primitive.isize.html'>isize</a>) -&gt; <a class='struct' href='../postgres_array/struct.ArraySlice.html' title='postgres_array::ArraySlice'>ArraySlice</a>&lt;'a, T&gt;</code></h4>
+<h4 id='method.get' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.get' class='fnname'>get</a>&lt;'a&gt;(&amp;'a self, idx: <a href='http://doc.rust-lang.org/nightly/std/primitive.isize.html'>isize</a>) -&gt; &amp;'a T</code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <div id="help" class="hidden">
+        <div class="shortcuts">
+            <h1>Keyboard shortcuts</h1>
+            <dl>
+                <dt>?</dt>
+                <dd>Show this help dialog</dd>
+                <dt>S</dt>
+                <dd>Focus the search field</dd>
+                <dt>&larrb;</dt>
+                <dd>Move up in search results</dd>
+                <dt>&rarrb;</dt>
+                <dd>Move down in search results</dd>
+                <dt>&#9166;</dt>
+                <dd>Go to active search result</dd>
+            </dl>
+        </div>
+        <div class="infos">
+            <h1>Search tricks</h1>
+            <p>
+                Prefix searches with a type followed by a colon (e.g.
+                <code>fn:</code>) to restrict the search to a given type.
+            </p>
+            <p>
+                Accepted types are: <code>fn</code>, <code>mod</code>,
+                <code>struct</code>, <code>enum</code>,
+                <code>trait</code>, <code>typedef</code> (or
+                <code>tdef</code>).
+            </p>
+        </div>
+    </div>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "postgres_array";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    
+    <script async src="../search-index.js"></script>
+</body>
+</html>
