@@ -7,14 +7,14 @@ description = "Array support for rust-postgres"
 repository = "https://github.com/sfackler/rust-postgres-array"
 documentation = "https://sfackler.github.io/rust-postgres-array/doc/postgres_array"
 
-[features]
-default = ["uuid"]
-
 [dependencies]
-postgres = "0.5"
-rustc-serialize = "0.2"
-time = "0.1"
+postgres = "0.7.1"
+byteorder = "0.2.11"
 
-[dependencies.uuid]
-optional = true
-version = "0.1"
+[dev-dependencies]
+rustc-serialize = "0.3"
+time = "0.1"
+uuid = "0.1"
+
+[dev-dependencies.postgres]
+features = ["rustc-serialize", "time", "uuid"]

@@ -2,9 +2,9 @@
 #![doc(html_root_url="https://sfackler.github.io/rust-postgres-array/doc")]
 #![feature(core, io)]
 
+#[macro_use(to_sql_checked)]
 extern crate postgres;
-extern crate time;
-extern crate "rustc-serialize" as serialize;
+extern crate byteorder;
 
 use std::mem;
 use std::slice;
@@ -354,7 +354,7 @@ mod tests {
     #[test]
     fn test_from_vec() {
         let a = ArrayBase::from_vec(vec!(0i32, 1, 2), -1);
-        assert!(&[DimensionInfo { len: 3, lower_bound: -1 }][] ==
+        assert!(&[DimensionInfo { len: 3, lower_bound: -1 }][..] ==
                 a.dimension_info());
         assert_eq!(&0, a.get(-1));
         assert_eq!(&1, a.get(0));

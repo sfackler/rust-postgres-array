@@ -1,85 +1,28 @@
-use std::old_io::ByRefReader;
-use std::old_io::util::LimitReader;
 use std::iter::MultiplicativeIterator;
+use std::io::prelude::*;
+use byteorder::{ReadBytesExt, WriteBytesExt, BigEndian};
 
-use time::Timespec;
-use serialize::json::Json;
-use postgres::{self, Error};
-use postgres::types::{RawFromSql, ToSql, RawToSql, Type, Oid};
+use postgres::{self, Error, Type, Kind, ToSql, FromSql, Oid};
+use postgres::types::{IsNull};
 
 use {Array, ArrayBase, DimensionInfo};
 
-macro_rules! check_types {
-    ($actual:ident, $($expected:pat),+) => (
-        match $actual {
-            $(&$expected)|+ => {}
-            actual => return Err(::postgres::Error::WrongType(actual.clone()))
-        }
-    )
-}
+impl<T> FromSql for ArrayBase<Option<T>> where T: FromSql {
+    fn from_sql<R: Read>(ty: &Type, raw: &mut R) -> postgres::Result<ArrayBase<Option<T>>> {
+        let element_type = match ty.kind() {
+            &Kind::Array(ref ty) => ty,
+            _ => panic!("unexpected type {:?}", ty),
+        };
 
-macro_rules! from_sql_impl {
-    ($t:ty, $($oid:pat),+) => {
-        impl ::postgres::FromSql for Option<::ArrayBase<Option<$t>>> {
-            fn from_sql(ty: &::postgres::Type, raw: Option<&[u8]>) -> ::postgres::Result<Self> {
-                check_types!(ty, $($oid),+);
-
-                match raw {
-                    Some(mut raw) => ::postgres::types::RawFromSql::raw_from_sql(ty, &mut raw).map(Some),
-                    None => Ok(None),
-                }
-            }
-        }
-
-        impl ::postgres::FromSql for ::ArrayBase<Option<$t>> {
-            fn from_sql(ty: &::postgres::Type, raw: Option<&[u8]>) -> ::postgres::Result<Self> {
-                let v: ::postgres::Result<Option<Self>> = ::postgres::FromSql::from_sql(ty, raw);
-                match v {
-                    Ok(None) => Err(::postgres::Error::WasNull),
-                    Ok(Some(v)) => Ok(v),
-                    Err(err) => Err(err),
-                }
-            }
-        }
-    }
-}
-
-macro_rules! to_sql_impl {
-    ($t:ty, $($oid:pat),+) => {
-        impl ::postgres::ToSql for ::ArrayBase<Option<$t>> {
-            fn to_sql(&self, ty: &::postgres::Type) -> ::postgres::Result<Option<Vec<u8>>> {
-                check_types!(ty, $($oid),+);
-                Ok(Some(::impls::raw_to_array(self, ty)))
-            }
-        }
-
-        impl ::postgres::ToSql for Option<::ArrayBase<Option<$t>>> {
-            fn to_sql(&self, ty: &::postgres::Type) -> ::postgres::Result<Option<Vec<u8>>> {
-                check_types!(ty, $($oid),+);
-                match *self {
-                    Some(ref arr) => arr.to_sql(ty),
-                    None => Ok(None)
-                }
-            }
-        }
-    }
-}
-
-
-#[cfg(feature = "uuid")]
-mod uuid;
-
-impl<T> RawFromSql for ArrayBase<Option<T>> where T: RawFromSql {
-    fn raw_from_sql<R: Reader>(ty: &Type, raw: &mut R) -> postgres::Result<ArrayBase<Option<T>>> {
-        let ndim = try!(raw.read_be_u32()) as usize;
-        let _has_null = try!(raw.read_be_i32()) == 1;
-        let _element_type: Oid = try!(raw.read_be_u32());
+        let ndim = try!(raw.read_u32::<BigEndian>()) as usize;
+        let _has_null = try!(raw.read_i32::<BigEndian>()) == 1;
+        let _element_type: Oid = try!(raw.read_u32::<BigEndian>());
 
         let mut dim_info = Vec::with_capacity(ndim);
         for _ in range(0, ndim) {
             dim_info.push(DimensionInfo {
-                len: try!(raw.read_be_u32()) as usize,
-                lower_bound: try!(raw.read_be_i32()) as isize,
+                len: try!(raw.read_u32::<BigEndian>()) as usize,
+                lower_bound: try!(raw.read_i32::<BigEndian>()) as isize,
             });
         }
         let nele = if dim_info.len() == 0 {
@@ -90,75 +33,71 @@ impl<T> RawFromSql for ArrayBase<Option<T>> where T: RawFromSql {
 
         let mut elements = Vec::with_capacity(nele);
         for _ in range(0, nele) {
-            let len = try!(raw.read_be_i32());
+            let len = try!(raw.read_i32::<BigEndian>());
             if len < 0 {
                 elements.push(None);
             } else {
-                let mut limit = LimitReader::new(raw.by_ref(), len as usize);
-                elements.push(Some(try!(RawFromSql::raw_from_sql(&ty.element_type().unwrap(),
-                                                                 &mut limit))));
+                let mut limit = raw.take(len as u64);
+                elements.push(Some(try!(FromSql::from_sql(&element_type, &mut limit))));
                 if limit.limit() != 0 {
-                    return Err(Error::BadData);
+                    return Err(Error::BadResponse);
                 }
             }
         }
 
         Ok(ArrayBase::from_raw(elements, dim_info))
     }
+
+    fn accepts(ty: &Type) -> bool {
+        match ty.kind() {
+            &Kind::Array(ref ty) => <T as FromSql>::accepts(ty),
+            _ => false
+        }
+    }
 }
 
-from_sql_impl!(bool, Type::BoolArray);
-from_sql_impl!(Vec<u8>, Type::ByteAArray);
-from_sql_impl!(i8, Type::CharArray);
-from_sql_impl!(i16, Type::Int2Array);
-from_sql_impl!(i32, Type::Int4Array);
-from_sql_impl!(String, Type::TextArray, Type::CharNArray, Type::VarcharArray, Type::NameArray);
-from_sql_impl!(i64, Type::Int8Array);
-from_sql_impl!(Json, Type::JsonArray);
-from_sql_impl!(f32, Type::Float4Array);
-from_sql_impl!(f64, Type::Float8Array);
-from_sql_impl!(Timespec, Type::TimestampArray, Type::TimestampTZArray);
+impl<T> ToSql for ArrayBase<Option<T>> where T: ToSql {
+    fn to_sql<W: ?Sized+Write>(&self, ty: &Type, mut w: &mut W) -> postgres::Result<IsNull> {
+        let element_type = match ty.kind() {
+            &Kind::Array(ref ty) => ty,
+            _ => panic!("unexpected type {:?}", ty),
+        };
 
-fn raw_to_array<T>(array: &ArrayBase<Option<T>>, ty: &Type) -> Vec<u8> where T: RawToSql {
-    let mut buf = vec![];
+        try!(w.write_u32::<BigEndian>(self.dimension_info().len() as u32));
+        try!(w.write_i32::<BigEndian>(1));
+        try!(w.write_u32::<BigEndian>(element_type.to_oid()));
 
-    let _ = buf.write_be_i32(array.dimension_info().len() as i32);
-    let _ = buf.write_be_i32(1);
-    let _ = buf.write_be_u32(ty.element_type().unwrap().to_oid());
+        for info in self.dimension_info() {
+            try!(w.write_u32::<BigEndian>(info.len as u32));
+            try!(w.write_i32::<BigEndian>(info.lower_bound as i32));
+        }
 
-    for info in array.dimension_info().iter() {
-        let _ = buf.write_be_i32(info.len as i32);
-        let _ = buf.write_be_i32(info.lower_bound as i32);
+        for v in self.values() {
+            match *v {
+                Some(ref val) => {
+                    let mut inner_buf = vec![];
+                    try!(val.to_sql(element_type, &mut inner_buf));
+                    try!(w.write_i32::<BigEndian>(inner_buf.len() as i32));
+                    try!(w.write_all(&inner_buf));
+                }
+                None => {
+                    try!(w.write_i32::<BigEndian>(-1));
+                }
+            }
+        }
+
+        Ok(IsNull::No)
     }
 
-    for v in array.values() {
-        match *v {
-            Some(ref val) => {
-                let mut inner_buf = vec![];
-                let _ = val.raw_to_sql(&ty.element_type().unwrap(), &mut inner_buf);
-                let _ = buf.write_be_i32(inner_buf.len() as i32);
-                let _ = buf.write_all(&*inner_buf);
-            }
-            None => {
-                let _ = buf.write_be_i32(-1);
-            }
+    fn accepts(ty: &Type) -> bool {
+        match ty.kind() {
+            &Kind::Array(ref ty) => <T as ToSql>::accepts(ty),
+            _ => false
         }
     }
 
-    buf
+    to_sql_checked!();
 }
-
-to_sql_impl!(bool, Type::BoolArray);
-to_sql_impl!(Vec<u8>, Type::ByteAArray);
-to_sql_impl!(i8, Type::CharArray);
-to_sql_impl!(i16, Type::Int2Array);
-to_sql_impl!(i32, Type::Int4Array);
-to_sql_impl!(i64, Type::Int8Array);
-to_sql_impl!(String, Type::TextArray, Type::CharNArray, Type::VarcharArray, Type::NameArray);
-to_sql_impl!(f32, Type::Float4Array);
-to_sql_impl!(f64, Type::Float8Array);
-to_sql_impl!(Json, Type::JsonArray);
-to_sql_impl!(Timespec, Type::TimestampArray, Type::TimestampTZArray);
 
 #[cfg(test)]
 mod test {
@@ -170,12 +109,12 @@ mod test {
     fn test_type<T: PartialEq+FromSql+ToSql, S: fmt::Display>(sql_type: &str, checks: &[(T, S)]) {
         let conn = Connection::connect("postgres://postgres@localhost", &SslMode::None).unwrap();
         for &(ref val, ref repr) in checks.iter() {
-            let stmt = conn.prepare(&format!("SELECT {}::{}", *repr, sql_type)[]).unwrap();
-            let result = stmt.query(&[]).unwrap().next().unwrap().get(0);
+            let stmt = conn.prepare(&format!("SELECT {}::{}", *repr, sql_type)).unwrap();
+            let result = stmt.query(&[]).unwrap().iter().next().unwrap().get(0);
             assert!(val == &result);
 
-            let stmt = conn.prepare(&format!("SELECT $1::{}", sql_type)[]).unwrap();
-            let result = stmt.query(&[val]).unwrap().next().unwrap().get(0);
+            let stmt = conn.prepare(&format!("SELECT $1::{}", sql_type)).unwrap();
+            let result = stmt.query(&[val]).unwrap().iter().next().unwrap().get(0);
             assert!(val == &result);
         }
     }
@@ -186,13 +125,13 @@ mod test {
             let tests = &[(Some(ArrayBase::from_vec(vec!(Some($v1), Some($v2), None), 1)),
                           format!("'{{{},{},NULL}}'", $s1, $s2)),
                          (None, "NULL".to_string())];
-            test_type(&format!("{}[]", $name)[], tests);
+            test_type(&format!("{}[]", $name), tests);
             let mut a = ArrayBase::from_vec(vec!(Some($v1), Some($v2)), 0);
             a.wrap(-1);
             a.push_move(ArrayBase::from_vec(vec!(None, Some($v3)), 0));
             let tests = &[(Some(a), format!("'[-1:0][0:1]={{{{{},{}}},{{NULL,{}}}}}'",
                                            $s1, $s2, $s3))];
-            test_type(&format!("{}[][]", $name)[], tests);
+            test_type(&format!("{}[][]", $name), tests);
         })
     }
 
@@ -266,6 +205,6 @@ mod test {
     fn test_empty_array() {
         let conn = Connection::connect("postgres://postgres@localhost", &SslMode::None).unwrap();
         let stmt = conn.prepare("SELECT '{}'::INT4[]").unwrap();
-        stmt.query(&[]).unwrap().next().unwrap().get::<_, ArrayBase<Option<i32>>>(0);
+        stmt.query(&[]).unwrap().iter().next().unwrap().get::<_, ArrayBase<Option<i32>>>(0);
     }
 }
