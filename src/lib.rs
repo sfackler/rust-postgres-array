@@ -1,6 +1,6 @@
 //! Multi-dimensional arrays with per-dimension specifiable lower bounds
 #![doc(html_root_url="https://sfackler.github.io/rust-postgres-array/doc")]
-#![feature(core, io)]
+#![feature(core)]
 
 #[macro_use(to_sql_checked)]
 extern crate postgres;
@@ -362,7 +362,7 @@ mod tests {
     }
 
     #[test]
-    #[should_fail]
+    #[should_panic]
     fn test_get_2d_fail() {
         let mut a = ArrayBase::from_vec(vec!(0i32, 1, 2), -1);
         a.wrap(1);
@@ -370,7 +370,7 @@ mod tests {
     }
 
     #[test]
-    #[should_fail]
+    #[should_panic]
     fn test_2d_slice_range_fail_low() {
         let mut a = ArrayBase::from_vec(vec!(0i32, 1, 2), -1);
         a.wrap(1);
@@ -378,7 +378,7 @@ mod tests {
     }
 
     #[test]
-    #[should_fail]
+    #[should_panic]
     fn test_2d_slice_range_fail_high() {
         let mut a = ArrayBase::from_vec(vec!(0i32, 1, 2), -1);
         a.wrap(1);
@@ -396,14 +396,14 @@ mod tests {
     }
 
     #[test]
-    #[should_fail]
+    #[should_panic]
     fn test_push_move_wrong_lower_bound() {
         let mut a = ArrayBase::from_vec(vec!(1i32), -1);
         a.push_move(ArrayBase::from_vec(vec!(2), 0));
     }
 
     #[test]
-    #[should_fail]
+    #[should_panic]
     fn test_push_move_wrong_dims() {
         let mut a = ArrayBase::from_vec(vec!(1i32), -1);
         a.wrap(1);
@@ -411,7 +411,7 @@ mod tests {
     }
 
     #[test]
-    #[should_fail]
+    #[should_panic]
     fn test_push_move_wrong_dim_count() {
         let mut a = ArrayBase::from_vec(vec!(1i32), -1);
         a.wrap(1);
@@ -472,14 +472,14 @@ mod tests {
     }
 
     #[test]
-    #[should_fail]
+    #[should_panic]
     fn test_base_overslice() {
         let a = ArrayBase::from_vec(vec!(1i32), 0);
         a.slice(0);
     }
 
     #[test]
-    #[should_fail]
+    #[should_panic]
     fn test_slice_overslice() {
         let mut a = ArrayBase::from_vec(vec!(1i32), 0);
         a.wrap(0);
