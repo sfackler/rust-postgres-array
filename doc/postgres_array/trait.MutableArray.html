@@ -26,7 +26,7 @@
 
     <section class="sidebar">
         
-        <p class='location'><a href='index.html'>postgres_array</a></p><div class='block struct'><h2>Structs</h2><a class='struct ' href='struct.ArrayBase.html' title='A multi-dimensional array'>ArrayBase</a><a class='struct ' href='struct.ArraySlice.html' title='An immutable slice of a multi-dimensional array'>ArraySlice</a><a class='struct ' href='struct.DimensionInfo.html' title='Information about a dimension of an array'>DimensionInfo</a><a class='struct ' href='struct.MutArraySlice.html' title='A mutable slice of a multi-dimensional array'>MutArraySlice</a></div><div class='block trait'><h2>Traits</h2><a class='trait ' href='trait.Array.html' title='Specifies methods that can be performed on multi-dimensional arrays'>Array</a><a class='trait current' href='trait.MutableArray.html' title='Specifies methods that can be performed on mutable multi-dimensional arrays'>MutableArray</a></div>
+        <p class='location'><a href='index.html'>postgres_array</a></p><script>window.sidebarCurrent = {name: 'MutableArray', ty: 'trait', relpath: ''};</script><script defer src="sidebar-items.js"></script>
     </section>
 
     <nav class="sub">
@@ -43,7 +43,7 @@
     <section id='main' class="content trait">
 <h1 class='fqn'><span class='in-band'>Trait <a href='index.html'>postgres_array</a>::<wbr><a class='trait' href=''>MutableArray</a><wbr></span><span class='out-of-band'><span id='render-detail'>
             <a id="collapse-all" href="#">[-]</a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-1016' href='../src/postgres_array/lib.rs.html#45-60'>[src]</a></span></h1>
+        </span><a id='src-1014' href='../src/postgres_array/lib.rs.html#45-60'>[src]</a></span></h1>
 <pre class='rust trait'>pub trait MutableArray&lt;T&gt;: <a class='trait' href='../postgres_array/trait.Array.html' title='postgres_array::Array'>Array</a>&lt;T&gt; {
     fn <a href='#tymethod.slice_mut' class='fnname'>slice_mut</a>&lt;'a&gt;(&amp;'a mut self, idx: <a href='http://doc.rust-lang.org/nightly/std/primitive.isize.html'>isize</a>) -&gt; <a class='struct' href='../postgres_array/struct.MutArraySlice.html' title='postgres_array::MutArraySlice'>MutArraySlice</a>&lt;'a, T&gt;;
     fn <a href='#tymethod.get_mut' class='fnname'>get_mut</a>&lt;'a&gt;(&amp;'a mut self, idx: <a href='http://doc.rust-lang.org/nightly/std/primitive.isize.html'>isize</a>) -&gt; &amp;'a mut T;
