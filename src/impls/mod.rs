@@ -28,7 +28,7 @@ impl<T> FromSql for ArrayBase<Option<T>> where T: FromSql {
         let nele = if dim_info.len() == 0 {
             0
         } else {
-            dim_info.iter().map(|info| info.len as usize).product()
+            dim_info.iter().map(|info| info.len).product()
         };
 
         let mut elements = Vec::with_capacity(nele);
