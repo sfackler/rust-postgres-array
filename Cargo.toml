@@ -8,7 +8,7 @@ repository = "https://github.com/sfackler/rust-postgres-array"
 documentation = "https://sfackler.github.io/rust-postgres-array/doc/postgres_array"
 
 [dependencies]
-postgres = "0.7.1"
+postgres = "0.8"
 byteorder = "0.3"
 
 [dev-dependencies]
