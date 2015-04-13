@@ -1,4 +1,3 @@
-use std::iter::MultiplicativeIterator;
 use std::io::prelude::*;
 use byteorder::{ReadBytesExt, WriteBytesExt, BigEndian};
 
@@ -28,7 +27,7 @@ impl<T> FromSql for ArrayBase<Option<T>> where T: FromSql {
         let nele = if dim_info.len() == 0 {
             0
         } else {
-            dim_info.iter().map(|info| info.len).product()
+            dim_info.iter().fold(1, |product, info| product * info.len)
         };
 
         let mut elements = Vec::with_capacity(nele);
