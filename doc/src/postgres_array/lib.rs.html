@@ -528,11 +528,9 @@
 <span id="486">486</span>
 <span id="487">487</span>
 <span id="488">488</span>
-<span id="489">489</span>
 </pre><pre class='rust '>
 <span class='doccomment'>//! Multi-dimensional arrays with per-dimension specifiable lower bounds</span>
 <span class='attribute'>#<span class='op'>!</span>[<span class='ident'>doc</span>(<span class='ident'>html_root_url</span><span class='op'>=</span><span class='string'>&quot;https://sfackler.github.io/rust-postgres-array/doc&quot;</span>)]</span>
-<span class='attribute'>#<span class='op'>!</span>[<span class='ident'>feature</span>(<span class='ident'>core</span>)]</span>
 
 <span class='attribute'>#[<span class='ident'>macro_use</span>(<span class='ident'>to_sql_checked</span>)]</span>
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>postgres</span>;
@@ -544,7 +542,7 @@
 <span class='kw'>mod</span> <span class='ident'>impls</span>;
 
 <span class='doccomment'>/// Information about a dimension of an array</span>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>PartialEq</span>, <span class='ident'>Eq</span>, <span class='ident'>Clone</span>, <span class='ident'>Copy</span>)]</span>
+<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>PartialEq</span>, <span class='ident'>Eq</span>, <span class='ident'>Clone</span>, <span class='ident'>Copy</span>, <span class='ident'>Debug</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>DimensionInfo</span> {
     <span class='doccomment'>/// The size of the dimension</span>
     <span class='kw'>pub</span> <span class='ident'>len</span>: <span class='ident'>usize</span>,
@@ -610,7 +608,7 @@
 }
 
 <span class='doccomment'>/// A multi-dimensional array</span>
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>PartialEq</span>, <span class='ident'>Eq</span>, <span class='ident'>Clone</span>)]</span>
+<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>PartialEq</span>, <span class='ident'>Eq</span>, <span class='ident'>Clone</span>, <span class='ident'>Debug</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>ArrayBase</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
     <span class='ident'>info</span>: <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>DimensionInfo</span><span class='op'>&gt;</span>,
     <span class='ident'>data</span>: <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span>,
