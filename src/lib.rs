@@ -7,6 +7,7 @@ extern crate byteorder;
 
 use std::mem;
 use std::slice;
+use std::vec;
 
 mod impls;
 
@@ -157,6 +158,26 @@ impl<T> ArrayBase<T> {
     }
 }
 
+impl<T> IntoIterator for ArrayBase<T> {
+    type Item = T;
+    type IntoIter = ArrayBaseIntoIter<T>;
+
+    fn into_iter(self) -> ArrayBaseIntoIter<T> {
+        ArrayBaseIntoIter {
+            inner: self.data.into_iter()
+        }
+    }
+}
+
+impl<'a, T> IntoIterator for &'a ArrayBase<T> {
+    type Item = &'a T;
+    type IntoIter = slice::Iter<'a, T>;
+
+    fn into_iter(self) -> slice::Iter<'a, T> {
+        self.values()
+    }
+}
+
 impl<T> Array<T> for ArrayBase<T> {
     fn dimension_info<'a>(&'a self) -> &'a [DimensionInfo] {
         &*self.info
@@ -205,6 +226,26 @@ impl<T> InternalArray<T> for ArrayBase<T> {
 impl<T> InternalMutableArray<T> for ArrayBase<T> {
     fn raw_get_mut<'a>(&'a mut self, idx: usize, _size: usize) -> &'a mut T {
         &mut self.data[idx]
+    }
+}
+
+/// An iterator over values of an `ArrayBase` in the higher-dimensional
+/// equivalent of row major order.
+pub struct ArrayBaseIntoIter<T> {
+    inner: vec::IntoIter<T>,
+}
+
+impl<T> Iterator for ArrayBaseIntoIter<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<T> {
+        self.inner.next()
+    }
+}
+
+impl<T> DoubleEndedIterator for ArrayBaseIntoIter<T> {
+    fn next_back(&mut self) -> Option<T> {
+        self.inner.next_back()
     }
 }
 
