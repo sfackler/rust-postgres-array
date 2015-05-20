@@ -144,11 +144,9 @@ pub struct MutArraySlice<'parent, T:'parent> {
 
 impl<'parent, T> Array<T> for MutArraySlice<'parent, T> {
     fn dimension_info<'a>(&'a self) -> &'a [DimensionInfo] {
-        let info : &'a [DimensionInfo] = unsafe {
-            match self.parent {
-                MutArrayParent::Slice(ref p) => mem::transmute(p.dimension_info()),
-                MutArrayParent::Base(ref p) => mem::transmute(p.dimension_info()),
-            }
+        let info : &'a [DimensionInfo] = match self.parent {
+            MutArrayParent::Slice(ref p) => p.dimension_info(),
+            MutArrayParent::Base(ref p) => p.dimension_info(),
         };
         &info[1..]
     }
@@ -195,11 +193,9 @@ impl<'parent, T> InternalArray<T> for MutArraySlice<'parent, T> {
     fn raw_get<'a>(&'a self, idx: usize, size: usize) -> &'a T {
         let size = size * self.dimension_info()[0].len;
         let idx = size * self.idx + idx;
-        unsafe {
-            match self.parent {
-                MutArrayParent::Slice(ref p) => mem::transmute(p.raw_get(idx, size)),
-                MutArrayParent::Base(ref p) => mem::transmute(p.raw_get(idx, size))
-            }
+        match self.parent {
+            MutArrayParent::Slice(ref p) => p.raw_get(idx, size),
+            MutArrayParent::Base(ref p) => p.raw_get(idx, size)
         }
     }
 }
@@ -208,11 +204,9 @@ impl<'parent, T> InternalMutableArray<T> for MutArraySlice<'parent, T> {
     fn raw_get_mut<'a>(&'a mut self, idx: usize, size: usize) -> &'a mut T {
         let size = size * self.dimension_info()[0].len;
         let idx = size * self.idx + idx;
-        unsafe {
-            match self.parent {
-                MutArrayParent::Slice(ref mut p) => mem::transmute(p.raw_get_mut(idx, size)),
-                MutArrayParent::Base(ref mut p) => mem::transmute(p.raw_get_mut(idx, size))
-            }
+        match self.parent {
+            MutArrayParent::Slice(ref mut p) => p.raw_get_mut(idx, size),
+            MutArrayParent::Base(ref mut p) => p.raw_get_mut(idx, size)
         }
     }
 }
