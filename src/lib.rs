@@ -6,8 +6,6 @@ extern crate postgres;
 extern crate byteorder;
 
 use std::mem;
-use std::slice;
-use std::vec;
 
 #[doc(inline)]
 pub use base::ArrayBase;
@@ -81,14 +79,14 @@ trait InternalMutableArray<T>: MutableArray<T> {
     fn raw_get_mut<'a>(&'a mut self, idx: usize, size: usize) -> &'a mut T;
 }
 
-enum ArrayParent<'parent, T:'static> {
-    Slice(&'parent ArraySlice<'static, T>),
-    MutSlice(&'parent MutArraySlice<'static, T>),
+enum ArrayParent<'parent, T:'parent> {
+    Slice(&'parent ArraySlice<'parent, T>),
+    MutSlice(&'parent MutArraySlice<'parent, T>),
     Base(&'parent ArrayBase<T>),
 }
 
 /// An immutable slice of a multi-dimensional array
-pub struct ArraySlice<'parent, T:'static> {
+pub struct ArraySlice<'parent, T:'parent> {
     parent: ArrayParent<'parent, T>,
     idx: usize,
 }
@@ -133,13 +131,13 @@ impl<'parent, T> InternalArray<T> for ArraySlice<'parent, T> {
     }
 }
 
-enum MutArrayParent<'parent, T:'static> {
-    Slice(&'parent mut MutArraySlice<'static, T>),
+enum MutArrayParent<'parent, T:'parent> {
+    Slice(&'parent mut MutArraySlice<'parent, T>),
     Base(&'parent mut ArrayBase<T>),
 }
 
 /// A mutable slice of a multi-dimensional array
-pub struct MutArraySlice<'parent, T:'static> {
+pub struct MutArraySlice<'parent, T:'parent> {
     parent: MutArrayParent<'parent, T>,
     idx: usize,
 }
