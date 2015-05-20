@@ -71,7 +71,7 @@ impl<T> ToSql for ArrayBase<Option<T>> where T: ToSql {
             try!(w.write_i32::<BigEndian>(info.lower_bound as i32));
         }
 
-        for v in self.values() {
+        for v in self {
             match *v {
                 Some(ref val) => {
                     let mut inner_buf = vec![];

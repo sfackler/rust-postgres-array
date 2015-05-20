@@ -151,10 +151,38 @@ impl<T> ArrayBase<T> {
         self.data.extend(other.data.into_iter());
     }
 
-    /// Returns an iterator over the values in this array, in the
+    /// Returns an iterator over references to the values in this array, in the
     /// higher-dimensional equivalent of row-major order.
-    pub fn values<'a>(&'a self) -> slice::Iter<'a, T> {
-        self.data.iter()
+    pub fn iter<'a>(&'a self) -> ArrayBaseIter<'a, T> {
+        ArrayBaseIter {
+            inner: self.data.iter(),
+        }
+    }
+
+    /// Returns an iterator over references to the values in this array, in the
+    /// higher-dimensional equivalent of row-major order.
+    pub fn iter_mut<'a>(&'a mut self) -> ArrayBaseIterMut<'a, T> {
+        ArrayBaseIterMut {
+            inner: self.data.iter_mut(),
+        }
+    }
+}
+
+impl<'a, T: 'a> IntoIterator for &'a ArrayBase<T> {
+    type Item = &'a T;
+    type IntoIter = ArrayBaseIter<'a, T>;
+
+    fn into_iter(self) -> ArrayBaseIter<'a, T> {
+        self.iter()
+    }
+}
+
+impl<'a, T: 'a> IntoIterator for &'a mut ArrayBase<T> {
+    type Item = &'a mut T;
+    type IntoIter = ArrayBaseIterMut<'a, T>;
+
+    fn into_iter(self) -> ArrayBaseIterMut<'a, T> {
+        self.iter_mut()
     }
 }
 
@@ -166,15 +194,6 @@ impl<T> IntoIterator for ArrayBase<T> {
         ArrayBaseIntoIter {
             inner: self.data.into_iter()
         }
-    }
-}
-
-impl<'a, T> IntoIterator for &'a ArrayBase<T> {
-    type Item = &'a T;
-    type IntoIter = slice::Iter<'a, T>;
-
-    fn into_iter(self) -> slice::Iter<'a, T> {
-        self.values()
     }
 }
 
@@ -229,8 +248,48 @@ impl<T> InternalMutableArray<T> for ArrayBase<T> {
     }
 }
 
+/// An iterator over references to values of an `ArrayBase` in the
+/// higher-dimensional equivalent of row-major order.
+pub struct ArrayBaseIter<'a, T: 'a> {
+    inner: slice::Iter<'a, T>,
+}
+
+impl<'a, T: 'a> Iterator for ArrayBaseIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<&'a T> {
+        self.inner.next()
+    }
+}
+
+impl<'a, T: 'a> DoubleEndedIterator for ArrayBaseIter<'a, T> {
+    fn next_back(&mut self) -> Option<&'a T> {
+        self.inner.next_back()
+    }
+}
+
+/// An iterator over mutable references to values of an `ArrayBase` in the
+/// higher-dimensional equivalent of row-major order.
+pub struct ArrayBaseIterMut<'a, T: 'a> {
+    inner: slice::IterMut<'a, T>,
+}
+
+impl<'a, T: 'a> Iterator for ArrayBaseIterMut<'a, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<&'a mut T> {
+        self.inner.next()
+    }
+}
+
+impl<'a, T: 'a> DoubleEndedIterator for ArrayBaseIterMut<'a, T> {
+    fn next_back(&mut self) -> Option<&'a mut T> {
+        self.inner.next_back()
+    }
+}
+
 /// An iterator over values of an `ArrayBase` in the higher-dimensional
-/// equivalent of row major order.
+/// equivalent of row-major order.
 pub struct ArrayBaseIntoIter<T> {
     inner: vec::IntoIter<T>,
 }
