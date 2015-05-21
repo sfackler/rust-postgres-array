@@ -4,10 +4,10 @@ use byteorder::{ReadBytesExt, WriteBytesExt, BigEndian};
 use postgres::{self, Error, Type, Kind, ToSql, FromSql, Oid};
 use postgres::types::{IsNull};
 
-use {Array, ArrayBase, DimensionInfo};
+use {Array, Dimension};
 
-impl<T> FromSql for ArrayBase<Option<T>> where T: FromSql {
-    fn from_sql<R: Read>(ty: &Type, raw: &mut R) -> postgres::Result<ArrayBase<Option<T>>> {
+impl<T> FromSql for Array<Option<T>> where T: FromSql {
+    fn from_sql<R: Read>(ty: &Type, raw: &mut R) -> postgres::Result<Array<Option<T>>> {
         let element_type = match ty.kind() {
             &Kind::Array(ref ty) => ty,
             _ => panic!("unexpected type {:?}", ty),
@@ -19,7 +19,7 @@ impl<T> FromSql for ArrayBase<Option<T>> where T: FromSql {
 
         let mut dim_info = Vec::with_capacity(ndim);
         for _ in (0..ndim) {
-            dim_info.push(DimensionInfo {
+            dim_info.push(Dimension {
                 len: try!(raw.read_u32::<BigEndian>()) as usize,
                 lower_bound: try!(raw.read_i32::<BigEndian>()) as isize,
             });
@@ -44,7 +44,7 @@ impl<T> FromSql for ArrayBase<Option<T>> where T: FromSql {
             }
         }
 
-        Ok(ArrayBase::from_raw(elements, dim_info))
+        Ok(Array::from_parts(elements, dim_info))
     }
 
     fn accepts(ty: &Type) -> bool {
@@ -55,34 +55,32 @@ impl<T> FromSql for ArrayBase<Option<T>> where T: FromSql {
     }
 }
 
-impl<T> ToSql for ArrayBase<Option<T>> where T: ToSql {
+impl<T> ToSql for Array<T> where T: ToSql {
     fn to_sql<W: ?Sized+Write>(&self, ty: &Type, mut w: &mut W) -> postgres::Result<IsNull> {
         let element_type = match ty.kind() {
             &Kind::Array(ref ty) => ty,
             _ => panic!("unexpected type {:?}", ty),
         };
 
-        try!(w.write_u32::<BigEndian>(self.dimension_info().len() as u32));
+        try!(w.write_u32::<BigEndian>(self.dimensions().len() as u32));
         try!(w.write_i32::<BigEndian>(1));
         try!(w.write_u32::<BigEndian>(element_type.to_oid()));
 
-        for info in self.dimension_info() {
+        for info in self.dimensions() {
             try!(w.write_u32::<BigEndian>(info.len as u32));
             try!(w.write_i32::<BigEndian>(info.lower_bound as i32));
         }
 
+        let mut inner_buf = vec![];
         for v in self {
-            match *v {
-                Some(ref val) => {
-                    let mut inner_buf = vec![];
-                    try!(val.to_sql(element_type, &mut inner_buf));
+            match try!(v.to_sql(element_type, &mut inner_buf)) {
+                IsNull::Yes => try!(w.write_i32::<BigEndian>(-1)),
+                IsNull::No => {
                     try!(w.write_i32::<BigEndian>(inner_buf.len() as i32));
                     try!(w.write_all(&inner_buf));
                 }
-                None => {
-                    try!(w.write_i32::<BigEndian>(-1));
-                }
             }
+            inner_buf.clear();
         }
 
         Ok(IsNull::No)
@@ -103,7 +101,7 @@ mod test {
     use std::fmt;
 
     use postgres::{Connection, SslMode, FromSql, ToSql};
-    use ArrayBase;
+    use Array;
 
     fn test_type<T: PartialEq+FromSql+ToSql, S: fmt::Display>(sql_type: &str, checks: &[(T, S)]) {
         let conn = Connection::connect("postgres://postgres@localhost", &SslMode::None).unwrap();
@@ -121,13 +119,13 @@ mod test {
     macro_rules! test_array_params {
         ($name:expr, $v1:expr, $s1:expr, $v2:expr, $s2:expr, $v3:expr, $s3:expr) => ({
 
-            let tests = &[(Some(ArrayBase::from_vec(vec!(Some($v1), Some($v2), None), 1)),
+            let tests = &[(Some(Array::from_vec(vec!(Some($v1), Some($v2), None), 1)),
                           format!("'{{{},{},NULL}}'", $s1, $s2)),
                          (None, "NULL".to_string())];
             test_type(&format!("{}[]", $name), tests);
-            let mut a = ArrayBase::from_vec(vec!(Some($v1), Some($v2)), 0);
+            let mut a = Array::from_vec(vec!(Some($v1), Some($v2)), 0);
             a.wrap(-1);
-            a.push_move(ArrayBase::from_vec(vec!(None, Some($v3)), 0));
+            a.push(Array::from_vec(vec!(None, Some($v3)), 0));
             let tests = &[(Some(a), format!("'[-1:0][0:1]={{{{{},{}}},{{NULL,{}}}}}'",
                                            $s1, $s2, $s3))];
             test_type(&format!("{}[][]", $name), tests);
@@ -204,6 +202,6 @@ mod test {
     fn test_empty_array() {
         let conn = Connection::connect("postgres://postgres@localhost", &SslMode::None).unwrap();
         let stmt = conn.prepare("SELECT '{}'::INT4[]").unwrap();
-        stmt.query(&[]).unwrap().iter().next().unwrap().get::<_, ArrayBase<Option<i32>>>(0);
+        stmt.query(&[]).unwrap().iter().next().unwrap().get::<_, Array<Option<i32>>>(0);
     }
 }
