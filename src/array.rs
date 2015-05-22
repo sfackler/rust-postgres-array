@@ -1,8 +1,10 @@
+use std::ops::{Index, IndexMut};
 use std::slice;
 use std::vec;
 
 use Dimension;
 
+/// A multi-dimensional array.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Array<T> {
     dims: Vec<Dimension>,
@@ -10,6 +12,15 @@ pub struct Array<T> {
 }
 
 impl<T> Array<T> {
+    /// Creates a new `Array` from its underlying components.
+    ///
+    /// The data array should be provided in the higher-dimensional equivalent
+    /// of row-major order.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the number of elements provided does not match the number of
+    /// elements specified by the dimensions.
     pub fn from_parts(data: Vec<T>, dimensions: Vec<Dimension>) -> Array<T> {
         assert!((data.is_empty() && dimensions.is_empty()) ||
                 data.len() == dimensions.iter().fold(1, |acc, i| acc * i.len),
@@ -20,6 +31,7 @@ impl<T> Array<T> {
         }
     }
 
+    /// Creates a new one-dimensional array.
     pub fn from_vec(data: Vec<T>, lower_bound: isize) -> Array<T> {
         Array {
             dims: vec![Dimension {
@@ -30,6 +42,10 @@ impl<T> Array<T> {
         }
     }
 
+    /// Wraps this array in a new dimension of size 1.
+    ///
+    /// For example, the one dimensional array `[1, 2]` would turn into the
+    /// two-dimensional array `[[1, 2]]`.
     pub fn wrap(&mut self, lower_bound: isize) {
         self.dims.insert(0, Dimension {
             len: 1,
@@ -37,6 +53,19 @@ impl<T> Array<T> {
         });
     }
 
+    /// Consumes another array, appending it to the top level dimension of this
+    /// array.
+    ///
+    /// The dimensions of the other array must be the same as the dimensions
+    /// of this array with the first dimension removed. This includes lower
+    /// bounds as well as lengths.
+    ///
+    /// For example, if `[3, 4]` is pushed onto `[[1, 2]]`, the result is
+    /// `[[1, 2], [3, 4]]`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the dimensions of the two arrays do not match.
     pub fn push(&mut self, other: Array<T>) {
         assert!(self.dims.len() - 1 == other.dims.len(),
                 "cannot append differently shaped arrays");
@@ -47,18 +76,9 @@ impl<T> Array<T> {
         self.data.extend(other.data);
     }
 
+    /// Returns the dimensions of this array.
     pub fn dimensions(&self) -> &[Dimension] {
         &self.dims
-    }
-
-    pub fn get(&self, indices: &[isize]) -> &T {
-        let idx = self.shift_idx(indices);
-        &self.data[idx]
-    }
-
-    pub fn get_mut(&mut self, indices: &[isize]) -> &mut T {
-        let idx = self.shift_idx(indices);
-        &mut self.data[idx]
     }
 
     fn shift_idx(&self, indices: &[isize]) -> usize {
@@ -83,6 +103,61 @@ impl<T> Array<T> {
         IterMut {
             inner: self.data.iter_mut(),
         }
+    }
+}
+
+pub trait ArrayIndex {
+    fn index<T>(&self, array: &Array<T>) -> usize;
+}
+
+impl<'a> ArrayIndex for &'a [isize] {
+    fn index<T>(&self, array: &Array<T>) -> usize {
+        array.shift_idx(*self)
+    }
+}
+
+impl ArrayIndex for isize {
+    fn index<T>(&self, array: &Array<T>) -> usize {
+        let slice: &[isize] = &[*self];
+        ArrayIndex::index(&slice, array)
+    }
+}
+
+macro_rules! tuple_impl {
+    ($($name:ident : $t:ty),+) => {
+        impl ArrayIndex for ($($t,)+) {
+            fn index<T>(&self, array: &Array<T>) -> usize {
+                let ($($name,)+) = *self;
+                let slice: &[isize] = &[$($name),+];
+                ArrayIndex::index(&slice, array)
+            }
+        }
+    }
+}
+
+tuple_impl!(a: isize);
+tuple_impl!(a: isize, b: isize);
+tuple_impl!(a: isize, b: isize, c: isize);
+tuple_impl!(a: isize, b: isize, c: isize, d: isize);
+tuple_impl!(a: isize, b: isize, c: isize, d: isize, e: isize);
+tuple_impl!(a: isize, b: isize, c: isize, d: isize, e: isize, f: isize);
+tuple_impl!(a: isize, b: isize, c: isize, d: isize, e: isize, f: isize, g: isize);
+tuple_impl!(a: isize, b: isize, c: isize, d: isize, e: isize, f: isize, g: isize, h: isize);
+tuple_impl!(a: isize, b: isize, c: isize, d: isize, e: isize, f: isize, g: isize, h: isize, i: isize);
+
+impl<T, I: ArrayIndex> Index<I> for Array<T> {
+    type Output = T;
+
+    fn index(&self, idx: I) -> &T {
+        let idx = idx.index(self);
+        &self.data[idx]
+    }
+}
+
+impl<T, I: ArrayIndex> IndexMut<I> for Array<T> {
+    fn index_mut(&mut self, idx: I) -> &mut T {
+        let idx = idx.index(self);
+        &mut self.data[idx]
     }
 }
 

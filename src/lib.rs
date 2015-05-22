@@ -39,18 +39,18 @@ mod tests {
         let a = Array::from_vec(vec!(0i32, 1, 2), -1);
         assert!(&[Dimension { len: 3, lower_bound: -1 }][..] ==
                 a.dimensions());
-        assert_eq!(&0, a.get(&[-1]));
-        assert_eq!(&1, a.get(&[0]));
-        assert_eq!(&2, a.get(&[1]));
+        assert_eq!(0, a[-1]);
+        assert_eq!(1, a[0]);
+        assert_eq!(2, a[1]);
     }
 
     #[test]
     fn test_2d_slice_get() {
         let mut a = Array::from_vec(vec!(0i32, 1, 2), -1);
         a.wrap(1);
-        assert_eq!(&0, a.get(&[1, -1]));
-        assert_eq!(&1, a.get(&[1, 0]));
-        assert_eq!(&2, a.get(&[1, 1]));
+        assert_eq!(0, a[(1, -1)]);
+        assert_eq!(1, a[(1, 0)]);
+        assert_eq!(2, a[(1, 1)]);
     }
 
     #[test]
@@ -83,10 +83,10 @@ mod tests {
         let mut a = Array::from_vec(vec!(1i32, 2), 0);
         a.wrap(0);
         a.push(Array::from_vec(vec!(3, 4), 0));
-        assert_eq!(&1, a.get(&[0, 0]));
-        assert_eq!(&2, a.get(&[0, 1]));
-        assert_eq!(&3, a.get(&[1, 0]));
-        assert_eq!(&4, a.get(&[1, 1]));
+        assert_eq!(1, a[(0, 0)]);
+        assert_eq!(2, a[(0, 1)]);
+        assert_eq!(3, a[(1, 0)]);
+        assert_eq!(4, a[(1, 1)]);
     }
 
     #[test]
@@ -99,21 +99,21 @@ mod tests {
         b.wrap(0);
         b.push(Array::from_vec(vec!(6, 7), 0));
         a.push(b);
-        assert_eq!(&0, a.get(&[0, 0, 0]));
-        assert_eq!(&1, a.get(&[0, 0, 1]));
-        assert_eq!(&2, a.get(&[0, 1, 0]));
-        assert_eq!(&3, a.get(&[0, 1, 1]));
-        assert_eq!(&4, a.get(&[1, 0, 0]));
-        assert_eq!(&5, a.get(&[1, 0, 1]));
-        assert_eq!(&6, a.get(&[1, 1, 0]));
-        assert_eq!(&7, a.get(&[1, 1, 1]));
+        assert_eq!(0, a[(0, 0, 0)]);
+        assert_eq!(1, a[(0, 0, 1)]);
+        assert_eq!(2, a[(0, 1, 0)]);
+        assert_eq!(3, a[(0, 1, 1)]);
+        assert_eq!(4, a[(1, 0, 0)]);
+        assert_eq!(5, a[(1, 0, 1)]);
+        assert_eq!(6, a[(1, 1, 0)]);
+        assert_eq!(7, a[(1, 1, 1)]);
     }
 
     #[test]
     fn test_mut() {
         let mut a = Array::from_vec(vec!(1i32, 2), 0);
         a.wrap(0);
-        *a.get_mut(&[0, 0]) = 3;
-        assert_eq!(&3, a.get(&[0, 0]));
+        a[(0, 0)] = 3;
+        assert_eq!(3, a[(0, 0)]);
     }
 }
