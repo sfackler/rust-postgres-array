@@ -22,7 +22,6 @@ pub struct Dimension {
 
 impl Dimension {
     fn shift(&self, idx: isize) -> usize {
-        println!("{:?} {}", self, idx);
         let offset = self.lower_bound;
         assert!(idx >= offset, "out of bounds array access");
         assert!(offset >= 0 || idx <= 0 || usize::max_value() - (-offset) as usize >= idx as usize,
