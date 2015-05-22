@@ -93,12 +93,16 @@ impl<T> Array<T> {
             .0
     }
 
+    /// Returns an iterator over references to the elements of the array in the
+    /// higher-dimensional equivalent of row-major order.
     pub fn iter<'a>(&'a self) -> Iter<'a, T> {
         Iter {
             inner: self.data.iter(),
         }
     }
 
+    /// Returns an iterator over mutable references to the elements of the
+    /// array in the higher-dimensional equivalent of row-major order.
     pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, T> {
         IterMut {
             inner: self.data.iter_mut(),
@@ -106,7 +110,15 @@ impl<T> Array<T> {
     }
 }
 
+/// A trait implemented by types that can index into an `Array`.
 pub trait ArrayIndex {
+    /// Calculates the index into the `Array`'s underlying storage specified
+    /// by the value of `self`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the value of `self` does not correspond to an in-bounds
+    /// element of the `Array`.
     fn index<T>(&self, array: &Array<T>) -> usize;
 }
 

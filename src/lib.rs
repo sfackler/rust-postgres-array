@@ -11,9 +11,12 @@ pub use array::Array;
 pub mod array;
 mod impls;
 
+/// Information about a dimension of an array.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Dimension {
+    /// The length of the dimension.
     pub len: usize,
+    /// The index of the first element of the dimension.
     pub lower_bound: isize,
 }
 
