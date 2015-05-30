@@ -86,9 +86,10 @@ impl<T> Array<T> {
         self.dims
             .iter()
             .zip(indices.iter().cloned())
+            .rev()
             .fold((0, 1), |(acc, stride), (dim, idx)| {
                 let shifted = dim.shift(idx);
-                (acc * stride + shifted, dim.len)
+                (acc + shifted * stride, dim.len * stride)
             })
             .0
     }
@@ -160,6 +161,31 @@ tuple_impl!(a: isize, b: isize, c: isize, d: isize, e: isize, f: isize, g: isize
 impl<T, I: ArrayIndex> Index<I> for Array<T> {
     type Output = T;
 
+    /// Indexes into the `Array`, retrieving a reference to the contained
+    /// value.
+    ///
+    /// Since `Array`s can be multi-dimensional, the `Index` trait is
+    /// implemented for a variety of index types. In the most generic case, a
+    /// `&[isize]` can be used. In addition, a bare `isize` as well as tuples
+    /// of up to 10 `isize` values may be used for convenience.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the index does not correspond to an in-bounds element of the
+    /// `Array`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use postgres_array::Array;
+    /// let mut array = Array::from_vec(vec![0i32, 1, 2, 3], 0);
+    /// assert_eq!(2, array[2]);
+    ///
+    /// array.wrap(0);
+    /// array.push(Array::from_vec(vec![4, 5, 6, 7], 0));
+    ///
+    /// assert_eq!(6, array[(1, 2)]);
+    /// ```
     fn index(&self, idx: I) -> &T {
         let idx = idx.index(self);
         &self.data[idx]
