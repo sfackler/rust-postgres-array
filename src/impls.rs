@@ -1,13 +1,16 @@
 use std::io::prelude::*;
+use std::error;
 use byteorder::{ReadBytesExt, WriteBytesExt, BigEndian};
 
-use postgres::{self, Error, Type, Kind, ToSql, FromSql, Oid};
-use postgres::types::{IsNull};
+use postgres;
+use postgres::error::Error;
+use postgres::types::{Type, Kind, ToSql, FromSql, Oid, IsNull, SessionInfo};
 
 use {Array, Dimension};
 
 impl<T> FromSql for Array<Option<T>> where T: FromSql {
-    fn from_sql<R: Read>(ty: &Type, raw: &mut R) -> postgres::Result<Array<Option<T>>> {
+    fn from_sql<R: Read>(ty: &Type, raw: &mut R, info: &SessionInfo)
+                         -> postgres::Result<Array<Option<T>>> {
         let element_type = match ty.kind() {
             &Kind::Array(ref ty) => ty,
             _ => panic!("unexpected type {:?}", ty),
@@ -37,9 +40,11 @@ impl<T> FromSql for Array<Option<T>> where T: FromSql {
                 elements.push(None);
             } else {
                 let mut limit = raw.take(len as u64);
-                elements.push(Some(try!(FromSql::from_sql(&element_type, &mut limit))));
+                elements.push(Some(try!(FromSql::from_sql(&element_type, &mut limit, info))));
                 if limit.limit() != 0 {
-                    return Err(Error::BadResponse);
+                    let err: Box<error::Error+Sync+Send> =
+                        "from_sql call did not consume all data".into();
+                    return Err(Error::Conversion(err));
                 }
             }
         }
@@ -56,7 +61,8 @@ impl<T> FromSql for Array<Option<T>> where T: FromSql {
 }
 
 impl<T> ToSql for Array<T> where T: ToSql {
-    fn to_sql<W: ?Sized+Write>(&self, ty: &Type, mut w: &mut W) -> postgres::Result<IsNull> {
+    fn to_sql<W: ?Sized+Write>(&self, ty: &Type, mut w: &mut W, info: &SessionInfo)
+                               -> postgres::Result<IsNull> {
         let element_type = match ty.kind() {
             &Kind::Array(ref ty) => ty,
             _ => panic!("unexpected type {:?}", ty),
@@ -64,7 +70,7 @@ impl<T> ToSql for Array<T> where T: ToSql {
 
         try!(w.write_u32::<BigEndian>(self.dimensions().len() as u32));
         try!(w.write_i32::<BigEndian>(1));
-        try!(w.write_u32::<BigEndian>(element_type.to_oid()));
+        try!(w.write_u32::<BigEndian>(element_type.oid()));
 
         for info in self.dimensions() {
             try!(w.write_u32::<BigEndian>(info.len as u32));
@@ -73,7 +79,7 @@ impl<T> ToSql for Array<T> where T: ToSql {
 
         let mut inner_buf = vec![];
         for v in self {
-            match try!(v.to_sql(element_type, &mut inner_buf)) {
+            match try!(v.to_sql(element_type, &mut inner_buf, info)) {
                 IsNull::Yes => try!(w.write_i32::<BigEndian>(-1)),
                 IsNull::No => {
                     try!(w.write_i32::<BigEndian>(inner_buf.len() as i32));
@@ -100,7 +106,8 @@ impl<T> ToSql for Array<T> where T: ToSql {
 mod test {
     use std::fmt;
 
-    use postgres::{Connection, SslMode, FromSql, ToSql};
+    use postgres::{Connection, SslMode};
+    use postgres::types::{FromSql, ToSql};
     use Array;
 
     fn test_type<T: PartialEq+FromSql+ToSql, S: fmt::Display>(sql_type: &str, checks: &[(T, S)]) {
