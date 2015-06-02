@@ -2,7 +2,7 @@ use std::io::prelude::*;
 use std::error;
 use byteorder::{ReadBytesExt, WriteBytesExt, BigEndian};
 
-use postgres;
+use postgres::{self, Result};
 use postgres::error::Error;
 use postgres::types::{Type, Kind, ToSql, FromSql, Oid, IsNull, SessionInfo};
 
@@ -68,13 +68,21 @@ impl<T> ToSql for Array<T> where T: ToSql {
             _ => panic!("unexpected type {:?}", ty),
         };
 
-        try!(w.write_u32::<BigEndian>(self.dimensions().len() as u32));
+        try!(w.write_i32::<BigEndian>(try!(downcast(self.dimensions().len()))));
         try!(w.write_i32::<BigEndian>(1));
         try!(w.write_u32::<BigEndian>(element_type.oid()));
 
         for info in self.dimensions() {
-            try!(w.write_u32::<BigEndian>(info.len as u32));
-            try!(w.write_i32::<BigEndian>(info.lower_bound as i32));
+            try!(w.write_i32::<BigEndian>(try!(downcast(info.len))));
+
+            let bound = if info.lower_bound > i32::max_value() as isize
+                    || info.lower_bound < i32::min_value() as isize {
+                let err: Box<error::Error+Sync+Send> = "value too large to transmit".into();
+                return Err(Error::Conversion(err));
+            } else {
+                info.lower_bound as i32
+            };
+            try!(w.write_i32::<BigEndian>(bound));
         }
 
         let mut inner_buf = vec![];
@@ -82,7 +90,7 @@ impl<T> ToSql for Array<T> where T: ToSql {
             match try!(v.to_sql(element_type, &mut inner_buf, info)) {
                 IsNull::Yes => try!(w.write_i32::<BigEndian>(-1)),
                 IsNull::No => {
-                    try!(w.write_i32::<BigEndian>(inner_buf.len() as i32));
+                    try!(w.write_i32::<BigEndian>(try!(downcast(inner_buf.len()))));
                     try!(w.write_all(&inner_buf));
                 }
             }
@@ -100,6 +108,15 @@ impl<T> ToSql for Array<T> where T: ToSql {
     }
 
     to_sql_checked!();
+}
+
+fn downcast(len: usize) -> Result<i32> {
+    if len > i32::max_value() as usize {
+        let err: Box<error::Error+Sync+Send> = "value too large to transmit".into();
+        Err(Error::Conversion(err))
+    } else {
+        Ok(len as i32)
+    }
 }
 
 #[cfg(test)]
