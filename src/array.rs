@@ -1,14 +1,48 @@
 use std::ops::{Index, IndexMut};
 use std::slice;
 use std::vec;
+use std::fmt;
 
 use Dimension;
 
 /// A multi-dimensional array.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone)]
 pub struct Array<T> {
     dims: Vec<Dimension>,
     data: Vec<T>,
+}
+
+impl<T: fmt::Debug> fmt::Debug for Array<T> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        if self.dims.iter().any(|dim| dim.lower_bound != 1) {
+            for dim in &self.dims {
+                try!(write!(fmt, "[{}:{}]", dim.lower_bound,
+                            dim.lower_bound + dim.len as isize - 1));
+            }
+            try!(write!(fmt, "="));
+        }
+        fmt_helper(0, &self.dims, &mut self.data.iter(), fmt)
+    }
+}
+
+fn fmt_helper<'a, T, I>(depth: usize,
+                        dims: &[Dimension],
+                        mut data: &mut I,
+                        fmt: &mut fmt::Formatter)
+                        -> fmt::Result
+        where I: Iterator<Item=&'a T>, T: 'a+fmt::Debug {
+    if depth == dims.len() {
+        return write!(fmt, "{:?}", data.next().unwrap());
+    }
+
+    try!(write!(fmt, "{{"));
+    for i in 0..dims[depth].len {
+        if i != 0 {
+            try!(write!(fmt, ","));
+        }
+        try!(fmt_helper(depth + 1, dims, data, fmt));
+    }
+    write!(fmt, "}}")
 }
 
 impl<T> Array<T> {

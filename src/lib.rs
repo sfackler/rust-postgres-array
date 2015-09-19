@@ -1,5 +1,5 @@
 //! Multi-dimensional arrays with per-dimension specifiable lower bounds
-#![doc(html_root_url="https://sfackler.github.io/rust-postgres-array/doc/v0.5.0")]
+#![doc(html_root_url="https://sfackler.github.io/rust-postgres-array/doc/v0.5.1")]
 
 #[macro_use(to_sql_checked)]
 extern crate postgres;
@@ -117,5 +117,20 @@ mod tests {
         a.wrap(0);
         a[(0, 0)] = 3;
         assert_eq!(3, a[(0, 0)]);
+    }
+
+    #[test]
+    fn test_debug() {
+        let a = Array::from_vec(vec![0i32, 1, 2, 3, 4], 1);
+        assert_eq!("{0,1,2,3,4}", &format!("{:?}", a));
+
+        let a = Array::from_vec(vec![0i32, 1, 2, 3, 4], -3);
+        assert_eq!("[-3:1]={0,1,2,3,4}", &format!("{:?}", a));
+
+        let mut a = Array::from_vec(vec![1i32, 2, 3], 3);
+        a.wrap(-2);
+        a.push(Array::from_vec(vec![4, 5, 6], 3));
+        a.wrap(1);
+        assert_eq!("[1:1][-2:-1][3:5]={{{1,2,3},{4,5,6}}}", &format!("{:?}", a));
     }
 }
