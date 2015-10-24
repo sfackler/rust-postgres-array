@@ -262,7 +262,7 @@ impl<T> IntoIterator for Array<T> {
     }
 }
 
-/// An iterator over references to values of an `ArrayBase` in the
+/// An iterator over references to values of an `Array` in the
 /// higher-dimensional equivalent of row-major order.
 pub struct Iter<'a, T: 'a> {
     inner: slice::Iter<'a, T>,
@@ -282,7 +282,7 @@ impl<'a, T: 'a> DoubleEndedIterator for Iter<'a, T> {
     }
 }
 
-/// An iterator over mutable references to values of an `ArrayBase` in the
+/// An iterator over mutable references to values of an `Array` in the
 /// higher-dimensional equivalent of row-major order.
 pub struct IterMut<'a, T: 'a> {
     inner: slice::IterMut<'a, T>,
@@ -302,7 +302,7 @@ impl<'a, T: 'a> DoubleEndedIterator for IterMut<'a, T> {
     }
 }
 
-/// An iterator over values of an `ArrayBase` in the higher-dimensional
+/// An iterator over values of an `Array` in the higher-dimensional
 /// equivalent of row-major order.
 pub struct IntoIter<T> {
     inner: vec::IntoIter<T>,
