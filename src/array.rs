@@ -6,13 +6,13 @@ use std::fmt;
 use Dimension;
 
 /// A multi-dimensional array.
-#[derive(PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Array<T> {
     dims: Vec<Dimension>,
     data: Vec<T>,
 }
 
-impl<T: fmt::Debug> fmt::Debug for Array<T> {
+impl<T: fmt::Display> fmt::Display for Array<T> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         if self.dims.iter().any(|dim| dim.lower_bound != 1) {
             for dim in &self.dims {
@@ -30,9 +30,9 @@ fn fmt_helper<'a, T, I>(depth: usize,
                         mut data: &mut I,
                         fmt: &mut fmt::Formatter)
                         -> fmt::Result
-        where I: Iterator<Item=&'a T>, T: 'a+fmt::Debug {
+        where I: Iterator<Item=&'a T>, T: 'a + fmt::Display {
     if depth == dims.len() {
-        return write!(fmt, "{:?}", data.next().unwrap());
+        return write!(fmt, "{}", data.next().unwrap());
     }
 
     try!(write!(fmt, "{{"));
@@ -262,7 +262,7 @@ impl<T> IntoIterator for Array<T> {
     }
 }
 
-/// An iterator over references to values of an `ArrayBase` in the
+/// An iterator over references to values of an `Array` in the
 /// higher-dimensional equivalent of row-major order.
 pub struct Iter<'a, T: 'a> {
     inner: slice::Iter<'a, T>,
@@ -282,7 +282,7 @@ impl<'a, T: 'a> DoubleEndedIterator for Iter<'a, T> {
     }
 }
 
-/// An iterator over mutable references to values of an `ArrayBase` in the
+/// An iterator over mutable references to values of an `Array` in the
 /// higher-dimensional equivalent of row-major order.
 pub struct IterMut<'a, T: 'a> {
     inner: slice::IterMut<'a, T>,
@@ -302,7 +302,7 @@ impl<'a, T: 'a> DoubleEndedIterator for IterMut<'a, T> {
     }
 }
 
-/// An iterator over values of an `ArrayBase` in the higher-dimensional
+/// An iterator over values of an `Array` in the higher-dimensional
 /// equivalent of row-major order.
 pub struct IntoIter<T> {
     inner: vec::IntoIter<T>,
