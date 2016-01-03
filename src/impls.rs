@@ -21,7 +21,7 @@ impl<T> FromSql for Array<Option<T>> where T: FromSql {
         let _element_type: Oid = try!(raw.read_u32::<BigEndian>());
 
         let mut dim_info = Vec::with_capacity(ndim);
-        for _ in (0..ndim) {
+        for _ in 0..ndim {
             dim_info.push(Dimension {
                 len: try!(raw.read_u32::<BigEndian>()) as usize,
                 lower_bound: try!(raw.read_i32::<BigEndian>()) as isize,
@@ -34,7 +34,7 @@ impl<T> FromSql for Array<Option<T>> where T: FromSql {
         };
 
         let mut elements = Vec::with_capacity(nele);
-        for _ in (0..nele) {
+        for _ in 0..nele {
             let len = try!(raw.read_i32::<BigEndian>());
             if len < 0 {
                 elements.push(None);
@@ -128,7 +128,7 @@ mod test {
     use Array;
 
     fn test_type<T: PartialEq+FromSql+ToSql, S: fmt::Display>(sql_type: &str, checks: &[(T, S)]) {
-        let conn = Connection::connect("postgres://postgres@localhost", &SslMode::None).unwrap();
+        let conn = Connection::connect("postgres://postgres@localhost", SslMode::None).unwrap();
         for &(ref val, ref repr) in checks.iter() {
             let stmt = conn.prepare(&format!("SELECT {}::{}", *repr, sql_type)).unwrap();
             let result = stmt.query(&[]).unwrap().iter().next().unwrap().get(0);
@@ -224,7 +224,7 @@ mod test {
 
     #[test]
     fn test_empty_array() {
-        let conn = Connection::connect("postgres://postgres@localhost", &SslMode::None).unwrap();
+        let conn = Connection::connect("postgres://postgres@localhost", SslMode::None).unwrap();
         let stmt = conn.prepare("SELECT '{}'::INT4[]").unwrap();
         stmt.query(&[]).unwrap().iter().next().unwrap().get::<_, Array<Option<i32>>>(0);
     }
