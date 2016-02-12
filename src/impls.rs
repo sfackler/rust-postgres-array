@@ -8,9 +8,9 @@ use postgres::types::{Type, Kind, ToSql, FromSql, Oid, IsNull, SessionInfo};
 
 use {Array, Dimension};
 
-impl<T> FromSql for Array<Option<T>> where T: FromSql {
+impl<T> FromSql for Array<T> where T: FromSql {
     fn from_sql<R: Read>(ty: &Type, raw: &mut R, info: &SessionInfo)
-                         -> postgres::Result<Array<Option<T>>> {
+                         -> postgres::Result<Array<T>> {
         let element_type = match ty.kind() {
             &Kind::Array(ref ty) => ty,
             _ => panic!("unexpected type {:?}", ty),
@@ -37,10 +37,10 @@ impl<T> FromSql for Array<Option<T>> where T: FromSql {
         for _ in 0..nele {
             let len = try!(raw.read_i32::<BigEndian>());
             if len < 0 {
-                elements.push(None);
+                elements.push(try!(FromSql::from_sql_null(&element_type, info)));
             } else {
                 let mut limit = raw.take(len as u64);
-                elements.push(Some(try!(FromSql::from_sql(&element_type, &mut limit, info))));
+                elements.push(try!(FromSql::from_sql(&element_type, &mut limit, info)));
                 if limit.limit() != 0 {
                     let err: Box<error::Error+Sync+Send> =
                         "from_sql call did not consume all data".into();
@@ -226,6 +226,6 @@ mod test {
     fn test_empty_array() {
         let conn = Connection::connect("postgres://postgres@localhost", SslMode::None).unwrap();
         let stmt = conn.prepare("SELECT '{}'::INT4[]").unwrap();
-        stmt.query(&[]).unwrap().iter().next().unwrap().get::<_, Array<Option<i32>>>(0);
+        stmt.query(&[]).unwrap().iter().next().unwrap().get::<_, Array<i32>>(0);
     }
 }
