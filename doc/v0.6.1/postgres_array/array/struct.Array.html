@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Array` struct in crate `postgres_array`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Array">
+
+    <title>postgres_array::array::Array - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../index.html'>postgres_array</a>::<wbr><a href='index.html'>array</a></p><script>window.sidebarCurrent = {name: 'Array', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>postgres_array</a>::<wbr><a href='index.html'>array</a>::<wbr><a class='struct' href=''>Array</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-14' class='srclink' href='../../src/postgres_array/array.rs.html#10-13' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Array&lt;T&gt; {
+    // some fields omitted
+}</pre><div class='docblock'><p>A multi-dimensional array.</p>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;T&gt; <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.from_parts' class='method'><code>fn <a href='#method.from_parts' class='fnname'>from_parts</a>(data: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;T&gt;, dimensions: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;<a class='struct' href='../../postgres_array/struct.Dimension.html' title='postgres_array::Dimension'>Dimension</a>&gt;) -&gt; <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;</code></h4>
+<div class='docblock'><p>Creates a new <code>Array</code> from its underlying components.</p>
+
+<p>The data array should be provided in the higher-dimensional equivalent
+of row-major order.</p>
+
+<h1 id='panics' class='section-header'><a href='#panics'>Panics</a></h1>
+<p>Panics if the number of elements provided does not match the number of
+elements specified by the dimensions.</p>
+</div><h4 id='method.from_vec' class='method'><code>fn <a href='#method.from_vec' class='fnname'>from_vec</a>(data: <a class='struct' href='https://doc.rust-lang.org/nightly/collections/vec/struct.Vec.html' title='collections::vec::Vec'>Vec</a>&lt;T&gt;, lower_bound: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.isize.html'>isize</a>) -&gt; <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;</code></h4>
+<div class='docblock'><p>Creates a new one-dimensional array.</p>
+</div><h4 id='method.wrap' class='method'><code>fn <a href='#method.wrap' class='fnname'>wrap</a>(&amp;mut self, lower_bound: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.isize.html'>isize</a>)</code></h4>
+<div class='docblock'><p>Wraps this array in a new dimension of size 1.</p>
+
+<p>For example, the one dimensional array <code>[1, 2]</code> would turn into the
+two-dimensional array <code>[[1, 2]]</code>.</p>
+</div><h4 id='method.push' class='method'><code>fn <a href='#method.push' class='fnname'>push</a>(&amp;mut self, other: <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;)</code></h4>
+<div class='docblock'><p>Consumes another array, appending it to the top level dimension of this
+array.</p>
+
+<p>The dimensions of the other array must be the same as the dimensions
+of this array with the first dimension removed. This includes lower
+bounds as well as lengths.</p>
+
+<p>For example, if <code>[3, 4]</code> is pushed onto <code>[[1, 2]]</code>, the result is
+<code>[[1, 2], [3, 4]]</code>.</p>
+
+<h1 id='panics-1' class='section-header'><a href='#panics-1'>Panics</a></h1>
+<p>Panics if the dimensions of the two arrays do not match.</p>
+</div><h4 id='method.dimensions' class='method'><code>fn <a href='#method.dimensions' class='fnname'>dimensions</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='struct' href='../../postgres_array/struct.Dimension.html' title='postgres_array::Dimension'>Dimension</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+<div class='docblock'><p>Returns the dimensions of this array.</p>
+</div><h4 id='method.iter' class='method'><code>fn <a href='#method.iter' class='fnname'>iter</a>&lt;'a&gt;(&amp;'a self) -&gt; <a class='struct' href='../../postgres_array/array/struct.Iter.html' title='postgres_array::array::Iter'>Iter</a>&lt;'a, T&gt;</code></h4>
+<div class='docblock'><p>Returns an iterator over references to the elements of the array in the
+higher-dimensional equivalent of row-major order.</p>
+</div><h4 id='method.iter_mut' class='method'><code>fn <a href='#method.iter_mut' class='fnname'>iter_mut</a>&lt;'a&gt;(&amp;'a mut self) -&gt; <a class='struct' href='../../postgres_array/array/struct.IterMut.html' title='postgres_array::array::IterMut'>IterMut</a>&lt;'a, T&gt;</code></h4>
+<div class='docblock'><p>Returns an iterator over mutable references to the elements of the
+array in the higher-dimensional equivalent of row-major order.</p>
+</div></div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl&lt;T: <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html' title='core::fmt::Display'>Display</a>&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html' title='core::fmt::Display'>Display</a> for <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html#method.fmt' class='fnname'>fmt</a>(&amp;self, fmt: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+</div><h3 class='impl'><code>impl&lt;T, I: <a class='trait' href='../../postgres_array/array/trait.ArrayIndex.html' title='postgres_array::array::ArrayIndex'>ArrayIndex</a>&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Index.html' title='core::ops::Index'>Index</a>&lt;I&gt; for <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;</code></h3><div class='docblock'><p>Indexes into the <code>Array</code>, retrieving a reference to the contained
+value.</p>
+
+<p>Since <code>Array</code>s can be multi-dimensional, the <code>Index</code> trait is
+implemented for a variety of index types. In the most generic case, a
+<code>&amp;[isize]</code> can be used. In addition, a bare <code>isize</code> as well as tuples
+of up to 10 <code>isize</code> values may be used for convenience.</p>
+
+<h1 id='panics-2' class='section-header'><a href='#panics-2'>Panics</a></h1>
+<p>Panics if the index does not correspond to an in-bounds element of the
+<code>Array</code>.</p>
+
+<h1 id='examples' class='section-header'><a href='#examples'>Examples</a></h1><pre class='rust rust-example-rendered'>
+<span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>array</span> <span class='op'>=</span> <span class='ident'>Array</span>::<span class='ident'>from_vec</span>(<span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>0i32</span>, <span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>], <span class='number'>0</span>);
+<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='number'>2</span>, <span class='ident'>array</span>[<span class='number'>2</span>]);
+
+<span class='ident'>array</span>.<span class='ident'>wrap</span>(<span class='number'>0</span>);
+<span class='ident'>array</span>.<span class='ident'>push</span>(<span class='ident'>Array</span>::<span class='ident'>from_vec</span>(<span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>4</span>, <span class='number'>5</span>, <span class='number'>6</span>, <span class='number'>7</span>], <span class='number'>0</span>));
+
+<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='number'>6</span>, <span class='ident'>array</span>[(<span class='number'>1</span>, <span class='number'>2</span>)]);</pre>
+</div><div class='impl-items'><h4 id='assoc_type.Output' class='type'><code>type Output = T</code></h4>
+<h4 id='method.index' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/ops/trait.Index.html#method.index' class='fnname'>index</a>(&amp;self, idx: I) -&gt; &amp;T</code></h4>
+</div><h3 class='impl'><code>impl&lt;T, I: <a class='trait' href='../../postgres_array/array/trait.ArrayIndex.html' title='postgres_array::array::ArrayIndex'>ArrayIndex</a>&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.IndexMut.html' title='core::ops::IndexMut'>IndexMut</a>&lt;I&gt; for <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.index_mut' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/ops/trait.IndexMut.html#method.index_mut' class='fnname'>index_mut</a>(&amp;mut self, idx: I) -&gt; &amp;mut T</code></h4>
+</div><h3 class='impl'><code>impl&lt;'a, T: 'a&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/iter/trait.IntoIterator.html' title='core::iter::IntoIterator'>IntoIterator</a> for &amp;'a <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='assoc_type.Item' class='type'><code>type Item = &amp;'a T</code></h4>
+<h4 id='assoc_type.IntoIter' class='type'><code>type IntoIter = <a class='struct' href='../../postgres_array/array/struct.Iter.html' title='postgres_array::array::Iter'>Iter</a>&lt;'a, T&gt;</code></h4>
+<h4 id='method.into_iter' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/iter/trait.IntoIterator.html#method.into_iter' class='fnname'>into_iter</a>(self) -&gt; <a class='struct' href='../../postgres_array/array/struct.Iter.html' title='postgres_array::array::Iter'>Iter</a>&lt;'a, T&gt;</code></h4>
+</div><h3 class='impl'><code>impl&lt;'a, T: 'a&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/iter/trait.IntoIterator.html' title='core::iter::IntoIterator'>IntoIterator</a> for &amp;'a mut <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='assoc_type.Item-1' class='type'><code>type Item = &amp;'a mut T</code></h4>
+<h4 id='assoc_type.IntoIter-1' class='type'><code>type IntoIter = <a class='struct' href='../../postgres_array/array/struct.IterMut.html' title='postgres_array::array::IterMut'>IterMut</a>&lt;'a, T&gt;</code></h4>
+<h4 id='method.into_iter-1' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/iter/trait.IntoIterator.html#method.into_iter' class='fnname'>into_iter</a>(self) -&gt; <a class='struct' href='../../postgres_array/array/struct.IterMut.html' title='postgres_array::array::IterMut'>IterMut</a>&lt;'a, T&gt;</code></h4>
+</div><h3 class='impl'><code>impl&lt;T&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/iter/trait.IntoIterator.html' title='core::iter::IntoIterator'>IntoIterator</a> for <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='assoc_type.Item-2' class='type'><code>type Item = T</code></h4>
+<h4 id='assoc_type.IntoIter-2' class='type'><code>type IntoIter = <a class='struct' href='../../postgres_array/array/struct.IntoIter.html' title='postgres_array::array::IntoIter'>IntoIter</a>&lt;T&gt;</code></h4>
+<h4 id='method.into_iter-2' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/iter/trait.IntoIterator.html#method.into_iter' class='fnname'>into_iter</a>(self) -&gt; <a class='struct' href='../../postgres_array/array/struct.IntoIter.html' title='postgres_array::array::IntoIter'>IntoIter</a>&lt;T&gt;</code></h4>
+</div><h3 class='impl'><code>impl&lt;T&gt; <a class='trait' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/trait.FromSql.html' title='postgres::types::FromSql'>FromSql</a> for <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt; <span class='where'>where T: <a class='trait' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/trait.FromSql.html' title='postgres::types::FromSql'>FromSql</a></span></code></h3><div class='impl-items'><h4 id='method.from_sql' class='method'><code>fn <a href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/trait.FromSql.html#method.from_sql' class='fnname'>from_sql</a>&lt;R: <a class='trait' href='https://doc.rust-lang.org/nightly/std/io/trait.Read.html' title='std::io::Read'>Read</a>&gt;(ty: &amp;<a class='enum' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/enum.Type.html' title='postgres::types::Type'>Type</a>, raw: &amp;mut R, info: &amp;<a class='struct' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/struct.SessionInfo.html' title='postgres::types::SessionInfo'>SessionInfo</a>) -&gt; <a class='type' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/type.Result.html' title='postgres::Result'>Result</a>&lt;<a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;&gt;</code></h4>
+<h4 id='method.accepts' class='method'><code>fn <a href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/trait.FromSql.html#method.accepts' class='fnname'>accepts</a>(ty: &amp;<a class='enum' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/enum.Type.html' title='postgres::types::Type'>Type</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.from_sql_null' class='method'><code>fn <a href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/trait.FromSql.html#method.from_sql_null' class='fnname'>from_sql_null</a>(ty: &amp;<a class='enum' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/enum.Type.html' title='postgres::types::Type'>Type</a>, ctx: &amp;<a class='struct' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/struct.SessionInfo.html' title='postgres::types::SessionInfo'>SessionInfo</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;Self, <a class='enum' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/error/enum.Error.html' title='postgres::error::Error'>Error</a>&gt;</code></h4>
+</div><h3 class='impl'><code>impl&lt;T&gt; <a class='trait' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/trait.ToSql.html' title='postgres::types::ToSql'>ToSql</a> for <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt; <span class='where'>where T: <a class='trait' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/trait.ToSql.html' title='postgres::types::ToSql'>ToSql</a></span></code></h3><div class='impl-items'><h4 id='method.to_sql' class='method'><code>fn <a href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/trait.ToSql.html#method.to_sql' class='fnname'>to_sql</a>&lt;W: ?<a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html' title='core::marker::Sized'>Sized</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/std/io/trait.Write.html' title='std::io::Write'>Write</a>&gt;(&amp;self, ty: &amp;<a class='enum' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/enum.Type.html' title='postgres::types::Type'>Type</a>, w: &amp;mut W, info: &amp;<a class='struct' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/struct.SessionInfo.html' title='postgres::types::SessionInfo'>SessionInfo</a>) -&gt; <a class='type' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/type.Result.html' title='postgres::Result'>Result</a>&lt;<a class='enum' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/enum.IsNull.html' title='postgres::types::IsNull'>IsNull</a>&gt;</code></h4>
+<h4 id='method.accepts-1' class='method'><code>fn <a href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/trait.ToSql.html#method.accepts' class='fnname'>accepts</a>(ty: &amp;<a class='enum' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/enum.Type.html' title='postgres::types::Type'>Type</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.to_sql_checked' class='method'><code>fn <a href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/trait.ToSql.html#method.to_sql_checked' class='fnname'>to_sql_checked</a>(&amp;self, ty: &amp;<a class='enum' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/enum.Type.html' title='postgres::types::Type'>Type</a>, out: &amp;mut <a class='trait' href='https://doc.rust-lang.org/nightly/std/io/trait.Write.html' title='std::io::Write'>Write</a>, ctx: &amp;<a class='struct' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/struct.SessionInfo.html' title='postgres::types::SessionInfo'>SessionInfo</a>) -&gt; <a class='type' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/type.Result.html' title='postgres::Result'>Result</a>&lt;<a class='enum' href='https://sfackler.github.io/rust-postgres/doc/v0.11.1/postgres/types/enum.IsNull.html' title='postgres::types::IsNull'>IsNull</a>&gt;</code></h4>
+</div><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl&lt;T: <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a>&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> for <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.clone' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;</code></h4>
+<h4 id='method.clone_from' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: &amp;Self)</code></h4>
+</div><h3 class='impl'><code>impl&lt;T: <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html' title='core::cmp::Eq'>Eq</a>&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html' title='core::cmp::Eq'>Eq</a> for <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;</code></h3><div class='impl-items'></div><h3 class='impl'><code>impl&lt;T: <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html' title='core::cmp::PartialEq'>PartialEq</a>&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html' title='core::cmp::PartialEq'>PartialEq</a> for <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.eq' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.eq' class='fnname'>eq</a>(&amp;self, __arg_0: &amp;<a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.ne' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.ne' class='fnname'>ne</a>(&amp;self, __arg_0: &amp;<a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+</div><h3 class='impl'><code>impl&lt;T: <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a>&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../../postgres_array/array/struct.Array.html' title='postgres_array::array::Array'>Array</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.fmt-1' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#method.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "postgres_array";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../jquery.js"></script>
+    <script src="../../main.js"></script>
+    
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>
