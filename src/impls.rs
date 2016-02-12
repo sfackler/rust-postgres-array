@@ -8,9 +8,10 @@ use postgres::types::{Type, Kind, ToSql, FromSql, Oid, IsNull, SessionInfo};
 
 use {Array, Dimension};
 
-impl<T> FromSql for Array<T> where T: FromSql {
-    fn from_sql<R: Read>(ty: &Type, raw: &mut R, info: &SessionInfo)
-                         -> postgres::Result<Array<T>> {
+impl<T> FromSql for Array<T>
+    where T: FromSql
+{
+    fn from_sql<R: Read>(ty: &Type, raw: &mut R, info: &SessionInfo) -> postgres::Result<Array<T>> {
         let element_type = match ty.kind() {
             &Kind::Array(ref ty) => ty,
             _ => panic!("unexpected type {:?}", ty),
@@ -42,8 +43,9 @@ impl<T> FromSql for Array<T> where T: FromSql {
                 let mut limit = raw.take(len as u64);
                 elements.push(try!(FromSql::from_sql(&element_type, &mut limit, info)));
                 if limit.limit() != 0 {
-                    let err: Box<error::Error+Sync+Send> =
-                        "from_sql call did not consume all data".into();
+                    let err: Box<error::Error + Sync + Send> = "from_sql call did not consume all \
+                                                                data"
+                                                                   .into();
                     return Err(Error::Conversion(err));
                 }
             }
@@ -55,14 +57,19 @@ impl<T> FromSql for Array<T> where T: FromSql {
     fn accepts(ty: &Type) -> bool {
         match ty.kind() {
             &Kind::Array(ref ty) => <T as FromSql>::accepts(ty),
-            _ => false
+            _ => false,
         }
     }
 }
 
-impl<T> ToSql for Array<T> where T: ToSql {
-    fn to_sql<W: ?Sized+Write>(&self, ty: &Type, mut w: &mut W, info: &SessionInfo)
-                               -> postgres::Result<IsNull> {
+impl<T> ToSql for Array<T>
+    where T: ToSql
+{
+    fn to_sql<W: ?Sized + Write>(&self,
+                                 ty: &Type,
+                                 mut w: &mut W,
+                                 info: &SessionInfo)
+                                 -> postgres::Result<IsNull> {
         let element_type = match ty.kind() {
             &Kind::Array(ref ty) => ty,
             _ => panic!("unexpected type {:?}", ty),
@@ -75,9 +82,9 @@ impl<T> ToSql for Array<T> where T: ToSql {
         for info in self.dimensions() {
             try!(w.write_i32::<BigEndian>(try!(downcast(info.len))));
 
-            let bound = if info.lower_bound > i32::max_value() as isize
-                    || info.lower_bound < i32::min_value() as isize {
-                let err: Box<error::Error+Sync+Send> = "value too large to transmit".into();
+            let bound = if info.lower_bound > i32::max_value() as isize ||
+                           info.lower_bound < i32::min_value() as isize {
+                let err: Box<error::Error + Sync + Send> = "value too large to transmit".into();
                 return Err(Error::Conversion(err));
             } else {
                 info.lower_bound as i32
@@ -103,7 +110,7 @@ impl<T> ToSql for Array<T> where T: ToSql {
     fn accepts(ty: &Type) -> bool {
         match ty.kind() {
             &Kind::Array(ref ty) => <T as ToSql>::accepts(ty),
-            _ => false
+            _ => false,
         }
     }
 
@@ -112,7 +119,7 @@ impl<T> ToSql for Array<T> where T: ToSql {
 
 fn downcast(len: usize) -> Result<i32> {
     if len > i32::max_value() as usize {
-        let err: Box<error::Error+Sync+Send> = "value too large to transmit".into();
+        let err: Box<error::Error + Sync + Send> = "value too large to transmit".into();
         Err(Error::Conversion(err))
     } else {
         Ok(len as i32)
@@ -127,7 +134,8 @@ mod test {
     use postgres::types::{FromSql, ToSql};
     use Array;
 
-    fn test_type<T: PartialEq+FromSql+ToSql, S: fmt::Display>(sql_type: &str, checks: &[(T, S)]) {
+    fn test_type<T: PartialEq + FromSql + ToSql, S: fmt::Display>(sql_type: &str,
+                                                                  checks: &[(T, S)]) {
         let conn = Connection::connect("postgres://postgres@localhost", SslMode::None).unwrap();
         for &(ref val, ref repr) in checks.iter() {
             let stmt = conn.prepare(&format!("SELECT {}::{}", *repr, sql_type)).unwrap();
@@ -163,20 +171,29 @@ mod test {
 
     #[test]
     fn test_byteaarray_params() {
-        test_array_params!("BYTEA", vec!(0u8, 1), r#""\\x0001""#, vec!(254u8, 255u8),
-                           r#""\\xfeff""#, vec!(10u8, 11u8), r#""\\x0a0b""#);
+        test_array_params!("BYTEA",
+                           vec![0u8, 1],
+                           r#""\\x0001""#,
+                           vec![254u8, 255u8],
+                           r#""\\xfeff""#,
+                           vec![10u8, 11u8],
+                           r#""\\x0a0b""#);
     }
 
     #[test]
     fn test_chararray_params() {
-        test_array_params!("\"char\"", 'a' as i8, "a", 'z' as i8, "z",
-                           '0' as i8, "0");
+        test_array_params!("\"char\"", 'a' as i8, "a", 'z' as i8, "z", '0' as i8, "0");
     }
 
     #[test]
     fn test_namearray_params() {
-        test_array_params!("NAME", "hello".to_string(), "hello", "world".to_string(),
-                           "world", "!".to_string(), "!");
+        test_array_params!("NAME",
+                           "hello".to_string(),
+                           "hello",
+                           "world".to_string(),
+                           "world",
+                           "!".to_string(),
+                           "!");
     }
 
     #[test]
@@ -191,20 +208,35 @@ mod test {
 
     #[test]
     fn test_textarray_params() {
-        test_array_params!("TEXT", "hello".to_string(), "hello", "world".to_string(),
-                           "world", "!".to_string(), "!");
+        test_array_params!("TEXT",
+                           "hello".to_string(),
+                           "hello",
+                           "world".to_string(),
+                           "world",
+                           "!".to_string(),
+                           "!");
     }
 
     #[test]
     fn test_charnarray_params() {
-        test_array_params!("CHAR(5)", "hello".to_string(), "hello",
-                           "world".to_string(), "world", "!    ".to_string(), "!");
+        test_array_params!("CHAR(5)",
+                           "hello".to_string(),
+                           "hello",
+                           "world".to_string(),
+                           "world",
+                           "!    ".to_string(),
+                           "!");
     }
 
     #[test]
     fn test_varchararray_params() {
-        test_array_params!("VARCHAR", "hello".to_string(), "hello",
-                           "world".to_string(), "world", "!".to_string(), "!");
+        test_array_params!("VARCHAR",
+                           "hello".to_string(),
+                           "hello",
+                           "world".to_string(),
+                           "world",
+                           "!".to_string(),
+                           "!");
     }
 
     #[test]
