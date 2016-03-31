@@ -9,7 +9,7 @@ documentation = "https://sfackler.github.io/rust-postgres-array/doc/v0.6.1/postg
 
 [dependencies]
 postgres = "0.11"
-byteorder = ">= 0.3, < 0.5"
+byteorder = "0.5"
 
 [dev-dependencies]
 rustc-serialize = "0.3"
