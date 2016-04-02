@@ -1,20 +1,18 @@
 [package]
 name = "postgres_array"
-version = "0.6.1"
+version = "0.6.2"
 authors = ["Steven Fackler <sfackler@gmail.com>"]
 license = "MIT"
 description = "Array support for rust-postgres"
 repository = "https://github.com/sfackler/rust-postgres-array"
-documentation = "https://sfackler.github.io/rust-postgres-array/doc/v0.6.1/postgres_array"
+documentation = "https://sfackler.github.io/rust-postgres-array/doc/v0.6.2/postgres_array"
 
 [dependencies]
 postgres = "0.11"
-byteorder = ">= 0.3, < 0.5"
+byteorder = "0.5"
 
 [dev-dependencies]
 rustc-serialize = "0.3"
 time = "0.1"
 uuid = "0.1"
-
-[dev-dependencies.postgres]
-features = ["rustc-serialize", "time", "uuid"]
+postgres = { version = "0.11", features = ["rustc-serialize", "time", "uuid"] }

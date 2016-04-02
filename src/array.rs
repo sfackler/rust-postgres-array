@@ -16,7 +16,9 @@ impl<T: fmt::Display> fmt::Display for Array<T> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         if self.dims.iter().any(|dim| dim.lower_bound != 1) {
             for dim in &self.dims {
-                try!(write!(fmt, "[{}:{}]", dim.lower_bound,
+                try!(write!(fmt,
+                            "[{}:{}]",
+                            dim.lower_bound,
                             dim.lower_bound + dim.len as isize - 1));
             }
             try!(write!(fmt, "="));
@@ -30,7 +32,9 @@ fn fmt_helper<'a, T, I>(depth: usize,
                         mut data: &mut I,
                         fmt: &mut fmt::Formatter)
                         -> fmt::Result
-        where I: Iterator<Item=&'a T>, T: 'a + fmt::Display {
+    where I: Iterator<Item = &'a T>,
+          T: 'a + fmt::Display
+{
     if depth == dims.len() {
         return write!(fmt, "{}", data.next().unwrap());
     }
@@ -69,9 +73,9 @@ impl<T> Array<T> {
     pub fn from_vec(data: Vec<T>, lower_bound: isize) -> Array<T> {
         Array {
             dims: vec![Dimension {
-                len: data.len(),
-                lower_bound: lower_bound
-            }],
+                           len: data.len(),
+                           lower_bound: lower_bound,
+                       }],
             data: data,
         }
     }
@@ -81,10 +85,11 @@ impl<T> Array<T> {
     /// For example, the one dimensional array `[1, 2]` would turn into the
     /// two-dimensional array `[[1, 2]]`.
     pub fn wrap(&mut self, lower_bound: isize) {
-        self.dims.insert(0, Dimension {
-            len: 1,
-            lower_bound: lower_bound,
-        });
+        self.dims.insert(0,
+                         Dimension {
+                             len: 1,
+                             lower_bound: lower_bound,
+                         });
     }
 
     /// Consumes another array, appending it to the top level dimension of this
@@ -131,17 +136,13 @@ impl<T> Array<T> {
     /// Returns an iterator over references to the elements of the array in the
     /// higher-dimensional equivalent of row-major order.
     pub fn iter<'a>(&'a self) -> Iter<'a, T> {
-        Iter {
-            inner: self.data.iter(),
-        }
+        Iter { inner: self.data.iter() }
     }
 
     /// Returns an iterator over mutable references to the elements of the
     /// array in the higher-dimensional equivalent of row-major order.
     pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, T> {
-        IterMut {
-            inner: self.data.iter_mut(),
-        }
+        IterMut { inner: self.data.iter_mut() }
     }
 }
 
@@ -255,9 +256,7 @@ impl<T> IntoIterator for Array<T> {
     type IntoIter = IntoIter<T>;
 
     fn into_iter(self) -> IntoIter<T> {
-        IntoIter {
-            inner: self.data.into_iter()
-        }
+        IntoIter { inner: self.data.into_iter() }
     }
 }
 
@@ -273,11 +272,21 @@ impl<'a, T: 'a> Iterator for Iter<'a, T> {
     fn next(&mut self) -> Option<&'a T> {
         self.inner.next()
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
 }
 
 impl<'a, T: 'a> DoubleEndedIterator for Iter<'a, T> {
     fn next_back(&mut self) -> Option<&'a T> {
         self.inner.next_back()
+    }
+}
+
+impl<'a, T: 'a> ExactSizeIterator for Iter<'a, T> {
+    fn len(&self) -> usize {
+        self.inner.len()
     }
 }
 
@@ -293,11 +302,21 @@ impl<'a, T: 'a> Iterator for IterMut<'a, T> {
     fn next(&mut self) -> Option<&'a mut T> {
         self.inner.next()
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
 }
 
 impl<'a, T: 'a> DoubleEndedIterator for IterMut<'a, T> {
     fn next_back(&mut self) -> Option<&'a mut T> {
         self.inner.next_back()
+    }
+}
+
+impl<'a, T: 'a> ExactSizeIterator for IterMut<'a, T> {
+    fn len(&self) -> usize {
+        self.inner.len()
     }
 }
 
@@ -313,10 +332,20 @@ impl<T> Iterator for IntoIter<T> {
     fn next(&mut self) -> Option<T> {
         self.inner.next()
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
 }
 
 impl<T> DoubleEndedIterator for IntoIter<T> {
     fn next_back(&mut self) -> Option<T> {
         self.inner.next_back()
+    }
+}
+
+impl<T> ExactSizeIterator for IntoIter<T> {
+    fn len(&self) -> usize {
+        self.inner.len()
     }
 }

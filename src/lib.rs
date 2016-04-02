@@ -1,5 +1,5 @@
 //! Multi-dimensional arrays with per-dimension specifiable lower bounds
-#![doc(html_root_url="https://sfackler.github.io/rust-postgres-array/doc/v0.6.1")]
+#![doc(html_root_url="https://sfackler.github.io/rust-postgres-array/doc/v0.6.2")]
 
 #[macro_use(to_sql_checked)]
 extern crate postgres;
@@ -38,9 +38,11 @@ mod tests {
 
     #[test]
     fn test_from_vec() {
-        let a = Array::from_vec(vec!(0i32, 1, 2), -1);
-        assert!(&[Dimension { len: 3, lower_bound: -1 }][..] ==
-                a.dimensions());
+        let a = Array::from_vec(vec![0i32, 1, 2], -1);
+        assert!(&[Dimension {
+                      len: 3,
+                      lower_bound: -1,
+                  }][..] == a.dimensions());
         assert_eq!(0, a[-1]);
         assert_eq!(1, a[0]);
         assert_eq!(2, a[1]);
@@ -48,7 +50,7 @@ mod tests {
 
     #[test]
     fn test_2d_slice_get() {
-        let mut a = Array::from_vec(vec!(0i32, 1, 2), -1);
+        let mut a = Array::from_vec(vec![0i32, 1, 2], -1);
         a.wrap(1);
         assert_eq!(0, a[(1, -1)]);
         assert_eq!(1, a[(1, 0)]);
@@ -58,33 +60,33 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_push_wrong_lower_bound() {
-        let mut a = Array::from_vec(vec!(1i32), -1);
-        a.push(Array::from_vec(vec!(2), 0));
+        let mut a = Array::from_vec(vec![1i32], -1);
+        a.push(Array::from_vec(vec![2], 0));
     }
 
     #[test]
     #[should_panic]
     fn test_push_wrong_dims() {
-        let mut a = Array::from_vec(vec!(1i32), -1);
+        let mut a = Array::from_vec(vec![1i32], -1);
         a.wrap(1);
-        a.push(Array::from_vec(vec!(1, 2), -1));
+        a.push(Array::from_vec(vec![1, 2], -1));
     }
 
     #[test]
     #[should_panic]
     fn test_push_wrong_dim_count() {
-        let mut a = Array::from_vec(vec!(1i32), -1);
+        let mut a = Array::from_vec(vec![1i32], -1);
         a.wrap(1);
-        let mut b = Array::from_vec(vec!(2), -1);
+        let mut b = Array::from_vec(vec![2], -1);
         b.wrap(1);
         a.push(b);
     }
 
     #[test]
     fn test_push_ok() {
-        let mut a = Array::from_vec(vec!(1i32, 2), 0);
+        let mut a = Array::from_vec(vec![1i32, 2], 0);
         a.wrap(0);
-        a.push(Array::from_vec(vec!(3, 4), 0));
+        a.push(Array::from_vec(vec![3, 4], 0));
         assert_eq!(1, a[(0, 0)]);
         assert_eq!(2, a[(0, 1)]);
         assert_eq!(3, a[(1, 0)]);
@@ -93,13 +95,13 @@ mod tests {
 
     #[test]
     fn test_3d() {
-        let mut a = Array::from_vec(vec!(0i32, 1), 0);
+        let mut a = Array::from_vec(vec![0i32, 1], 0);
         a.wrap(0);
-        a.push(Array::from_vec(vec!(2, 3), 0));
+        a.push(Array::from_vec(vec![2, 3], 0));
         a.wrap(0);
-        let mut b = Array::from_vec(vec!(4, 5), 0);
+        let mut b = Array::from_vec(vec![4, 5], 0);
         b.wrap(0);
-        b.push(Array::from_vec(vec!(6, 7), 0));
+        b.push(Array::from_vec(vec![6, 7], 0));
         a.push(b);
         assert_eq!(0, a[(0, 0, 0)]);
         assert_eq!(1, a[(0, 0, 1)]);
@@ -113,7 +115,7 @@ mod tests {
 
     #[test]
     fn test_mut() {
-        let mut a = Array::from_vec(vec!(1i32, 2), 0);
+        let mut a = Array::from_vec(vec![1i32, 2], 0);
         a.wrap(0);
         a[(0, 0)] = 3;
         assert_eq!(3, a[(0, 0)]);
