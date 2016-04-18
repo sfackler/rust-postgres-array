@@ -49,6 +49,16 @@ mod tests {
     }
 
     #[test]
+    fn test_extract() {
+        let a = Array::from_vec(vec![0i32, 1, 2], -1);
+        let a = a.extract();
+        assert_eq!(a.len(), 3);
+        assert_eq!(0, a[0]);
+        assert_eq!(1, a[1]);
+        assert_eq!(2, a[2]);
+    }
+
+    #[test]
     fn test_2d_slice_get() {
         let mut a = Array::from_vec(vec![0i32, 1, 2], -1);
         a.wrap(1);
