@@ -144,6 +144,12 @@ impl<T> Array<T> {
     pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, T> {
         IterMut { inner: self.data.iter_mut() }
     }
+
+    /// Returns the underlying data vector for this Array in the
+    /// higher-dimensional equivalent of row-major order.
+    pub fn into_inner(self) -> Vec<T> {
+        self.data
+    }
 }
 
 /// A trait implemented by types that can index into an `Array`.
