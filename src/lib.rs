@@ -49,9 +49,9 @@ mod tests {
     }
 
     #[test]
-    fn test_extract() {
+    fn test_into_inner() {
         let a = Array::from_vec(vec![0i32, 1, 2], -1);
-        let a = a.extract();
+        let a = a.into_inner();
         assert_eq!(a.len(), 3);
         assert_eq!(0, a[0]);
         assert_eq!(1, a[1]);

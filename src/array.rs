@@ -147,7 +147,7 @@ impl<T> Array<T> {
 
     /// Returns the underlying data vector for this Array in the
     /// higher-dimensional equivalent of row-major order.
-    pub fn extract(self) -> Vec<T> {
+    pub fn into_inner(self) -> Vec<T> {
         self.data
     }
 }
