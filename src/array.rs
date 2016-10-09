@@ -19,7 +19,7 @@ impl<T: fmt::Display> fmt::Display for Array<T> {
                 try!(write!(fmt,
                             "[{}:{}]",
                             dim.lower_bound,
-                            dim.lower_bound + dim.len as isize - 1));
+                            dim.lower_bound as isize + dim.len as isize - 1));
             }
             try!(write!(fmt, "="));
         }
@@ -61,7 +61,7 @@ impl<T> Array<T> {
     /// elements specified by the dimensions.
     pub fn from_parts(data: Vec<T>, dimensions: Vec<Dimension>) -> Array<T> {
         assert!((data.is_empty() && dimensions.is_empty()) ||
-                data.len() == dimensions.iter().fold(1, |acc, i| acc * i.len),
+                data.len() == dimensions.iter().fold(1, |acc, i| acc * i.len as usize),
                 "size mismatch");
         Array {
             dims: dimensions,
@@ -70,10 +70,10 @@ impl<T> Array<T> {
     }
 
     /// Creates a new one-dimensional array.
-    pub fn from_vec(data: Vec<T>, lower_bound: isize) -> Array<T> {
+    pub fn from_vec(data: Vec<T>, lower_bound: i32) -> Array<T> {
         Array {
             dims: vec![Dimension {
-                           len: data.len(),
+                           len: data.len() as i32,
                            lower_bound: lower_bound,
                        }],
             data: data,
@@ -84,7 +84,7 @@ impl<T> Array<T> {
     ///
     /// For example, the one dimensional array `[1, 2]` would turn into the
     /// two-dimensional array `[[1, 2]]`.
-    pub fn wrap(&mut self, lower_bound: isize) {
+    pub fn wrap(&mut self, lower_bound: i32) {
         self.dims.insert(0,
                          Dimension {
                              len: 1,
@@ -128,7 +128,7 @@ impl<T> Array<T> {
             .rev()
             .fold((0, 1), |(acc, stride), (dim, idx)| {
                 let shifted = dim.shift(idx);
-                (acc + shifted * stride, dim.len * stride)
+                (acc + shifted * stride, dim.len as usize * stride)
             })
             .0
     }

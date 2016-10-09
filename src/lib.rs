@@ -1,9 +1,10 @@
 //! Multi-dimensional arrays with per-dimension specifiable lower bounds
 #![doc(html_root_url="https://sfackler.github.io/rust-postgres-array/doc/v0.6.2")]
 
-#[macro_use(to_sql_checked)]
+extern crate fallible_iterator;
+#[macro_use]
 extern crate postgres;
-extern crate byteorder;
+extern crate postgres_protocol;
 
 #[doc(inline)]
 pub use array::Array;
@@ -15,19 +16,19 @@ mod impls;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Dimension {
     /// The length of the dimension.
-    pub len: usize,
+    pub len: i32,
     /// The index of the first element of the dimension.
-    pub lower_bound: isize,
+    pub lower_bound: i32,
 }
 
 impl Dimension {
     fn shift(&self, idx: isize) -> usize {
-        let offset = self.lower_bound;
+        let offset = self.lower_bound as isize;
         assert!(idx >= offset, "out of bounds array access");
         assert!(offset >= 0 || idx <= 0 || usize::max_value() - (-offset) as usize >= idx as usize,
                 "out of bounds array access");
         let shifted = idx.wrapping_sub(offset) as usize;
-        assert!(shifted < self.len, "out of bounds array access");
+        assert!(shifted < self.len as usize, "out of bounds array access");
         shifted
     }
 }

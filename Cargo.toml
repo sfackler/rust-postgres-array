@@ -8,11 +8,6 @@ repository = "https://github.com/sfackler/rust-postgres-array"
 documentation = "https://sfackler.github.io/rust-postgres-array/doc/v0.6.2/postgres_array"
 
 [dependencies]
-postgres = "0.11"
-byteorder = "0.5"
-
-[dev-dependencies]
-rustc-serialize = "0.3"
-time = "0.1"
-uuid = "0.1"
-postgres = { version = "0.11", features = ["rustc-serialize", "time", "uuid"] }
+fallible-iterator = "0.1"
+postgres = { git = "https://github.com/sfackler/rust-postgres" }
+postgres-protocol = "0.1"

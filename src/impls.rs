@@ -1,57 +1,33 @@
-use std::io::prelude::*;
-use std::error;
-use byteorder::{ReadBytesExt, WriteBytesExt, BigEndian};
-
-use postgres::{self, Result};
-use postgres::error::Error;
-use postgres::types::{Type, Kind, ToSql, FromSql, Oid, IsNull, SessionInfo};
+use fallible_iterator::FallibleIterator;
+use postgres::types::{Type, Kind, ToSql, FromSql, IsNull, SessionInfo};
+use postgres_protocol::types;
+use postgres_protocol;
+use std::error::Error;
 
 use {Array, Dimension};
 
 impl<T> FromSql for Array<T>
     where T: FromSql
 {
-    fn from_sql<R: Read>(ty: &Type, raw: &mut R, info: &SessionInfo) -> postgres::Result<Array<T>> {
-        let element_type = match ty.kind() {
-            &Kind::Array(ref ty) => ty,
-            _ => panic!("unexpected type {:?}", ty),
+    fn from_sql(ty: &Type, raw: &[u8], info: &SessionInfo) -> Result<Array<T>, Box<Error + Sync + Send>> {
+        let element_type = match *ty.kind() {
+            Kind::Array(ref ty) => ty,
+            _ => unreachable!(),
         };
 
-        let ndim = try!(raw.read_u32::<BigEndian>()) as usize;
-        let _has_null = try!(raw.read_i32::<BigEndian>()) == 1;
-        let _element_type: Oid = try!(raw.read_u32::<BigEndian>());
+        let array = try!(types::array_from_sql(raw));
 
-        let mut dim_info = Vec::with_capacity(ndim);
-        for _ in 0..ndim {
-            dim_info.push(Dimension {
-                len: try!(raw.read_u32::<BigEndian>()) as usize,
-                lower_bound: try!(raw.read_i32::<BigEndian>()) as isize,
-            });
-        }
-        let nele = if dim_info.len() == 0 {
-            0
-        } else {
-            dim_info.iter().fold(1, |product, info| product * info.len)
-        };
+        let dimensions = try!(array.dimensions()
+            .map(|d| {
+                Dimension { len: d.len, lower_bound: d.lower_bound }
+            })
+            .collect());
 
-        let mut elements = Vec::with_capacity(nele);
-        for _ in 0..nele {
-            let len = try!(raw.read_i32::<BigEndian>());
-            if len < 0 {
-                elements.push(try!(FromSql::from_sql_null(&element_type, info)));
-            } else {
-                let mut limit = raw.take(len as u64);
-                elements.push(try!(FromSql::from_sql(&element_type, &mut limit, info)));
-                if limit.limit() != 0 {
-                    let err: Box<error::Error + Sync + Send> = "from_sql call did not consume all \
-                                                                data"
-                                                                   .into();
-                    return Err(Error::Conversion(err));
-                }
-            }
-        }
+        let elements = try!(array.values()
+            .and_then(|v| FromSql::from_sql_nullable(element_type, v, info))
+            .collect());
 
-        Ok(Array::from_parts(elements, dim_info))
+        Ok(Array::from_parts(elements, dimensions))
     }
 
     fn accepts(ty: &Type) -> bool {
@@ -65,44 +41,34 @@ impl<T> FromSql for Array<T>
 impl<T> ToSql for Array<T>
     where T: ToSql
 {
-    fn to_sql<W: ?Sized + Write>(&self,
-                                 ty: &Type,
-                                 mut w: &mut W,
-                                 info: &SessionInfo)
-                                 -> postgres::Result<IsNull> {
+    fn to_sql(&self, ty: &Type, w: &mut Vec<u8>, info: &SessionInfo) -> Result<IsNull, Box<Error + Sync + Send>> {
         let element_type = match ty.kind() {
             &Kind::Array(ref ty) => ty,
-            _ => panic!("unexpected type {:?}", ty),
+            _ => unreachable!(),
         };
 
-        try!(w.write_i32::<BigEndian>(try!(downcast(self.dimensions().len()))));
-        try!(w.write_i32::<BigEndian>(1));
-        try!(w.write_u32::<BigEndian>(element_type.oid()));
-
-        for info in self.dimensions() {
-            try!(w.write_i32::<BigEndian>(try!(downcast(info.len))));
-
-            let bound = if info.lower_bound > i32::max_value() as isize ||
-                           info.lower_bound < i32::min_value() as isize {
-                let err: Box<error::Error + Sync + Send> = "value too large to transmit".into();
-                return Err(Error::Conversion(err));
-            } else {
-                info.lower_bound as i32
-            };
-            try!(w.write_i32::<BigEndian>(bound));
-        }
-
-        let mut inner_buf = vec![];
-        for v in self {
-            match try!(v.to_sql(element_type, &mut inner_buf, info)) {
-                IsNull::Yes => try!(w.write_i32::<BigEndian>(-1)),
-                IsNull::No => {
-                    try!(w.write_i32::<BigEndian>(try!(downcast(inner_buf.len()))));
-                    try!(w.write_all(&inner_buf));
+        let dimensions = self.dimensions()
+            .iter()
+            .map(|d| {
+                types::ArrayDimension {
+                    len: d.len,
+                    lower_bound: d.lower_bound,
                 }
-            }
-            inner_buf.clear();
-        }
+            });
+        let elements = self.iter();
+
+        try!(types::array_to_sql(dimensions,
+                                 true,
+                                 element_type.oid(),
+                                 elements,
+                                 |v, w| {
+                                     match v.to_sql(element_type, w, info) {
+                                         Ok(IsNull::Yes) => Ok(postgres_protocol::IsNull::Yes),
+                                         Ok(IsNull::No) => Ok(postgres_protocol::IsNull::No),
+                                         Err(e) => Err(e),
+                                     }
+                                 },
+                                 w));
 
         Ok(IsNull::No)
     }
@@ -117,26 +83,17 @@ impl<T> ToSql for Array<T>
     to_sql_checked!();
 }
 
-fn downcast(len: usize) -> Result<i32> {
-    if len > i32::max_value() as usize {
-        let err: Box<error::Error + Sync + Send> = "value too large to transmit".into();
-        Err(Error::Conversion(err))
-    } else {
-        Ok(len as i32)
-    }
-}
-
 #[cfg(test)]
 mod test {
     use std::fmt;
 
-    use postgres::{Connection, SslMode};
+    use postgres::{Connection, TlsMode};
     use postgres::types::{FromSql, ToSql};
     use Array;
 
     fn test_type<T: PartialEq + FromSql + ToSql, S: fmt::Display>(sql_type: &str,
                                                                   checks: &[(T, S)]) {
-        let conn = Connection::connect("postgres://postgres@localhost", SslMode::None).unwrap();
+        let conn = Connection::connect("postgres://postgres@localhost", TlsMode::None).unwrap();
         for &(ref val, ref repr) in checks.iter() {
             let stmt = conn.prepare(&format!("SELECT {}::{}", *repr, sql_type)).unwrap();
             let result = stmt.query(&[]).unwrap().iter().next().unwrap().get(0);
@@ -256,7 +213,7 @@ mod test {
 
     #[test]
     fn test_empty_array() {
-        let conn = Connection::connect("postgres://postgres@localhost", SslMode::None).unwrap();
+        let conn = Connection::connect("postgres://postgres@localhost", TlsMode::None).unwrap();
         let stmt = conn.prepare("SELECT '{}'::INT4[]").unwrap();
         stmt.query(&[]).unwrap().iter().next().unwrap().get::<_, Array<i32>>(0);
     }
