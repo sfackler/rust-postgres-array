@@ -22,14 +22,15 @@ pub struct Dimension {
 }
 
 impl Dimension {
-    fn shift(&self, idx: isize) -> usize {
-        let offset = self.lower_bound as isize;
+    fn shift(&self, idx: i32) -> i32 {
+        let offset = self.lower_bound;
         assert!(idx >= offset, "out of bounds array access");
-        assert!(offset >= 0 || idx <= 0 || usize::max_value() - (-offset) as usize >= idx as usize,
+        assert!(offset >= 0 || idx <= 0 || i32::max_value() - (-offset) >= idx,
                 "out of bounds array access");
-        let shifted = idx.wrapping_sub(offset) as usize;
-        assert!(shifted < self.len as usize, "out of bounds array access");
-        shifted
+        match idx.checked_sub(offset) {
+            Some(shifted) => shifted,
+            None => panic!("out of bounds array access"),
+        }
     }
 }
 
