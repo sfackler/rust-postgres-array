@@ -19,7 +19,7 @@ impl<T: fmt::Display> fmt::Display for Array<T> {
                 try!(write!(fmt,
                             "[{}:{}]",
                             dim.lower_bound,
-                            dim.lower_bound + dim.len as isize - 1));
+                            dim.lower_bound + dim.len - 1));
             }
             try!(write!(fmt, "="));
         }
@@ -61,7 +61,7 @@ impl<T> Array<T> {
     /// elements specified by the dimensions.
     pub fn from_parts(data: Vec<T>, dimensions: Vec<Dimension>) -> Array<T> {
         assert!((data.is_empty() && dimensions.is_empty()) ||
-                data.len() == dimensions.iter().fold(1, |acc, i| acc * i.len),
+                data.len() as i32 == dimensions.iter().fold(1, |acc, i| acc * i.len),
                 "size mismatch");
         Array {
             dims: dimensions,
@@ -70,10 +70,10 @@ impl<T> Array<T> {
     }
 
     /// Creates a new one-dimensional array.
-    pub fn from_vec(data: Vec<T>, lower_bound: isize) -> Array<T> {
+    pub fn from_vec(data: Vec<T>, lower_bound: i32) -> Array<T> {
         Array {
             dims: vec![Dimension {
-                           len: data.len(),
+                           len: data.len() as i32,
                            lower_bound: lower_bound,
                        }],
             data: data,
@@ -84,7 +84,7 @@ impl<T> Array<T> {
     ///
     /// For example, the one dimensional array `[1, 2]` would turn into the
     /// two-dimensional array `[[1, 2]]`.
-    pub fn wrap(&mut self, lower_bound: isize) {
+    pub fn wrap(&mut self, lower_bound: i32) {
         self.dims.insert(0,
                          Dimension {
                              len: 1,
@@ -120,7 +120,7 @@ impl<T> Array<T> {
         &self.dims
     }
 
-    fn shift_idx(&self, indices: &[isize]) -> usize {
+    fn shift_idx(&self, indices: &[i32]) -> i32 {
         assert_eq!(self.dims.len(), indices.len());
         self.dims
             .iter()
@@ -144,6 +144,12 @@ impl<T> Array<T> {
     pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, T> {
         IterMut { inner: self.data.iter_mut() }
     }
+
+    /// Returns the underlying data vector for this Array in the
+    /// higher-dimensional equivalent of row-major order.
+    pub fn into_inner(self) -> Vec<T> {
+        self.data
+    }
 }
 
 /// A trait implemented by types that can index into an `Array`.
@@ -155,18 +161,18 @@ pub trait ArrayIndex {
     ///
     /// Panics if the value of `self` does not correspond to an in-bounds
     /// element of the `Array`.
-    fn index<T>(&self, array: &Array<T>) -> usize;
+    fn index<T>(&self, array: &Array<T>) -> i32;
 }
 
-impl<'a> ArrayIndex for &'a [isize] {
-    fn index<T>(&self, array: &Array<T>) -> usize {
+impl<'a> ArrayIndex for &'a [i32] {
+    fn index<T>(&self, array: &Array<T>) -> i32 {
         array.shift_idx(*self)
     }
 }
 
-impl ArrayIndex for isize {
-    fn index<T>(&self, array: &Array<T>) -> usize {
-        let slice: &[isize] = &[*self];
+impl ArrayIndex for i32 {
+    fn index<T>(&self, array: &Array<T>) -> i32 {
+        let slice: &[i32] = &[*self];
         ArrayIndex::index(&slice, array)
     }
 }
@@ -174,32 +180,32 @@ impl ArrayIndex for isize {
 macro_rules! tuple_impl {
     ($($name:ident : $t:ty),+) => {
         impl ArrayIndex for ($($t,)+) {
-            fn index<T>(&self, array: &Array<T>) -> usize {
+            fn index<T>(&self, array: &Array<T>) -> i32 {
                 let ($($name,)+) = *self;
-                let slice: &[isize] = &[$($name),+];
+                let slice: &[i32] = &[$($name),+];
                 ArrayIndex::index(&slice, array)
             }
         }
     }
 }
 
-tuple_impl!(a: isize);
-tuple_impl!(a: isize, b: isize);
-tuple_impl!(a: isize, b: isize, c: isize);
-tuple_impl!(a: isize, b: isize, c: isize, d: isize);
-tuple_impl!(a: isize, b: isize, c: isize, d: isize, e: isize);
-tuple_impl!(a: isize, b: isize, c: isize, d: isize, e: isize, f: isize);
-tuple_impl!(a: isize, b: isize, c: isize, d: isize, e: isize, f: isize, g: isize);
-tuple_impl!(a: isize, b: isize, c: isize, d: isize, e: isize, f: isize, g: isize, h: isize);
-tuple_impl!(a: isize, b: isize, c: isize, d: isize, e: isize, f: isize, g: isize, h: isize, i: isize);
+tuple_impl!(a: i32);
+tuple_impl!(a: i32, b: i32);
+tuple_impl!(a: i32, b: i32, c: i32);
+tuple_impl!(a: i32, b: i32, c: i32, d: i32);
+tuple_impl!(a: i32, b: i32, c: i32, d: i32, e: i32);
+tuple_impl!(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32);
+tuple_impl!(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32);
+tuple_impl!(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32, h: i32);
+tuple_impl!(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32, h: i32, i: i32);
 
 /// Indexes into the `Array`, retrieving a reference to the contained
 /// value.
 ///
 /// Since `Array`s can be multi-dimensional, the `Index` trait is
 /// implemented for a variety of index types. In the most generic case, a
-/// `&[isize]` can be used. In addition, a bare `isize` as well as tuples
-/// of up to 10 `isize` values may be used for convenience.
+/// `&[i32]` can be used. In addition, a bare `i32` as well as tuples
+/// of up to 10 `i32` values may be used for convenience.
 ///
 /// # Panics
 ///
@@ -222,14 +228,14 @@ impl<T, I: ArrayIndex> Index<I> for Array<T> {
     type Output = T;
     fn index(&self, idx: I) -> &T {
         let idx = idx.index(self);
-        &self.data[idx]
+        &self.data[idx as usize]
     }
 }
 
 impl<T, I: ArrayIndex> IndexMut<I> for Array<T> {
     fn index_mut(&mut self, idx: I) -> &mut T {
         let idx = idx.index(self);
-        &mut self.data[idx]
+        &mut self.data[idx as usize]
     }
 }
 

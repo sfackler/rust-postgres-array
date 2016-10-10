@@ -1,9 +1,10 @@
 //! Multi-dimensional arrays with per-dimension specifiable lower bounds
-#![doc(html_root_url="https://sfackler.github.io/rust-postgres-array/doc/v0.6.2")]
+#![doc(html_root_url="https://sfackler.github.io/rust-postgres-array/doc/v0.7.0")]
 
-#[macro_use(to_sql_checked)]
+extern crate fallible_iterator;
+#[macro_use]
 extern crate postgres;
-extern crate byteorder;
+extern crate postgres_protocol;
 
 #[doc(inline)]
 pub use array::Array;
@@ -15,20 +16,21 @@ mod impls;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Dimension {
     /// The length of the dimension.
-    pub len: usize,
+    pub len: i32,
     /// The index of the first element of the dimension.
-    pub lower_bound: isize,
+    pub lower_bound: i32,
 }
 
 impl Dimension {
-    fn shift(&self, idx: isize) -> usize {
+    fn shift(&self, idx: i32) -> i32 {
         let offset = self.lower_bound;
         assert!(idx >= offset, "out of bounds array access");
-        assert!(offset >= 0 || idx <= 0 || usize::max_value() - (-offset) as usize >= idx as usize,
+        assert!(offset >= 0 || idx <= 0 || i32::max_value() - (-offset) >= idx,
                 "out of bounds array access");
-        let shifted = idx.wrapping_sub(offset) as usize;
-        assert!(shifted < self.len, "out of bounds array access");
-        shifted
+        match idx.checked_sub(offset) {
+            Some(shifted) => shifted,
+            None => panic!("out of bounds array access"),
+        }
     }
 }
 
@@ -46,6 +48,16 @@ mod tests {
         assert_eq!(0, a[-1]);
         assert_eq!(1, a[0]);
         assert_eq!(2, a[1]);
+    }
+
+    #[test]
+    fn test_into_inner() {
+        let a = Array::from_vec(vec![0i32, 1, 2], -1);
+        let a = a.into_inner();
+        assert_eq!(a.len(), 3);
+        assert_eq!(0, a[0]);
+        assert_eq!(1, a[1]);
+        assert_eq!(2, a[2]);
     }
 
     #[test]
