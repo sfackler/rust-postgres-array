@@ -9,5 +9,5 @@ documentation = "https://sfackler.github.io/rust-postgres-array/doc/v0.6.2/postg
 
 [dependencies]
 fallible-iterator = "0.1"
-postgres = { git = "https://github.com/sfackler/rust-postgres" }
+postgres = "0.12"
 postgres-protocol = "0.1"
