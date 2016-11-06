@@ -1,5 +1,5 @@
 //! Multi-dimensional arrays with per-dimension specifiable lower bounds
-#![doc(html_root_url="https://sfackler.github.io/rust-postgres-array/doc/v0.7.0")]
+#![doc(html_root_url="https://sfackler.github.io/rust-postgres-array/doc/v0.7.1")]
 
 extern crate fallible_iterator;
 #[macro_use]
