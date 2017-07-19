@@ -1,13 +1,13 @@
 [package]
 name = "postgres_array"
-version = "0.7.1"
+version = "0.8.0"
 authors = ["Steven Fackler <sfackler@gmail.com>"]
 license = "MIT"
 description = "Array support for rust-postgres"
 repository = "https://github.com/sfackler/rust-postgres-array"
-documentation = "https://sfackler.github.io/rust-postgres-array/doc/v0.7.1/postgres_array"
+documentation = "https://sfackler.github.io/rust-postgres-array/doc/v0.8.0/postgres_array"
 
 [dependencies]
 fallible-iterator = "0.1"
-postgres = ">= 0.12, < 0.14"
-postgres-protocol = "0.1"
+postgres = "0.14"
+postgres-protocol = "0.3"

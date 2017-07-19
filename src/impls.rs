@@ -1,5 +1,5 @@
 use fallible_iterator::FallibleIterator;
-use postgres::types::{Type, Kind, ToSql, FromSql, IsNull, SessionInfo};
+use postgres::types::{Type, Kind, ToSql, FromSql, IsNull};
 use postgres_protocol::types;
 use postgres_protocol;
 use std::error::Error;
@@ -9,7 +9,7 @@ use {Array, Dimension};
 impl<T> FromSql for Array<T>
     where T: FromSql
 {
-    fn from_sql(ty: &Type, raw: &[u8], info: &SessionInfo) -> Result<Array<T>, Box<Error + Sync + Send>> {
+    fn from_sql(ty: &Type, raw: &[u8]) -> Result<Array<T>, Box<Error + Sync + Send>> {
         let element_type = match *ty.kind() {
             Kind::Array(ref ty) => ty,
             _ => unreachable!(),
@@ -24,7 +24,7 @@ impl<T> FromSql for Array<T>
             .collect());
 
         let elements = try!(array.values()
-            .and_then(|v| FromSql::from_sql_nullable(element_type, v, info))
+            .and_then(|v| FromSql::from_sql_nullable(element_type, v))
             .collect());
 
         Ok(Array::from_parts(elements, dimensions))
@@ -41,7 +41,7 @@ impl<T> FromSql for Array<T>
 impl<T> ToSql for Array<T>
     where T: ToSql
 {
-    fn to_sql(&self, ty: &Type, w: &mut Vec<u8>, info: &SessionInfo) -> Result<IsNull, Box<Error + Sync + Send>> {
+    fn to_sql(&self, ty: &Type, w: &mut Vec<u8>) -> Result<IsNull, Box<Error + Sync + Send>> {
         let element_type = match ty.kind() {
             &Kind::Array(ref ty) => ty,
             _ => unreachable!(),
@@ -62,7 +62,7 @@ impl<T> ToSql for Array<T>
                                  element_type.oid(),
                                  elements,
                                  |v, w| {
-                                     match v.to_sql(element_type, w, info) {
+                                     match v.to_sql(element_type, w) {
                                          Ok(IsNull::Yes) => Ok(postgres_protocol::IsNull::Yes),
                                          Ok(IsNull::No) => Ok(postgres_protocol::IsNull::No),
                                          Err(e) => Err(e),
