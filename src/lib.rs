@@ -1,5 +1,5 @@
 //! Multi-dimensional arrays with per-dimension specifiable lower bounds
-#![doc(html_root_url="https://sfackler.github.io/rust-postgres-array/doc/v0.7.1")]
+#![doc(html_root_url="https://docs.rs/postgres_array/0.8.0")]
 
 extern crate fallible_iterator;
 #[macro_use]
@@ -25,8 +25,10 @@ impl Dimension {
     fn shift(&self, idx: i32) -> i32 {
         let offset = self.lower_bound;
         assert!(idx >= offset, "out of bounds array access");
-        assert!(offset >= 0 || idx <= 0 || i32::max_value() - (-offset) >= idx,
-                "out of bounds array access");
+        assert!(
+            offset >= 0 || idx <= 0 || i32::max_value() - (-offset) >= idx,
+            "out of bounds array access"
+        );
         match idx.checked_sub(offset) {
             Some(shifted) => shifted,
             None => panic!("out of bounds array access"),
@@ -41,10 +43,15 @@ mod tests {
     #[test]
     fn test_from_vec() {
         let a = Array::from_vec(vec![0i32, 1, 2], -1);
-        assert!(&[Dimension {
-                      len: 3,
-                      lower_bound: -1,
-                  }][..] == a.dimensions());
+        assert!(
+            &[
+                Dimension {
+                    len: 3,
+                    lower_bound: -1,
+                },
+            ]
+                [..] == a.dimensions()
+        );
         assert_eq!(0, a[-1]);
         assert_eq!(1, a[0]);
         assert_eq!(2, a[1]);
