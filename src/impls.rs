@@ -7,7 +7,8 @@ use std::error::Error;
 use {Array, Dimension};
 
 impl<T> FromSql for Array<T>
-    where T: FromSql
+where
+    T: FromSql,
 {
     fn from_sql(ty: &Type, raw: &[u8]) -> Result<Array<T>, Box<Error + Sync + Send>> {
         let element_type = match *ty.kind() {
@@ -17,15 +18,24 @@ impl<T> FromSql for Array<T>
 
         let array = try!(types::array_from_sql(raw));
 
-        let dimensions = try!(array.dimensions()
-            .map(|d| {
-                Dimension { len: d.len, lower_bound: d.lower_bound }
-            })
-            .collect());
+        let dimensions = try!(
+            array
+                .dimensions()
+                .map(|d| {
+                    Dimension {
+                        len: d.len,
+                        lower_bound: d.lower_bound,
+                    }
+                })
+                .collect()
+        );
 
-        let elements = try!(array.values()
-            .and_then(|v| FromSql::from_sql_nullable(element_type, v))
-            .collect());
+        let elements = try!(
+            array
+                .values()
+                .and_then(|v| FromSql::from_sql_nullable(element_type, v))
+                .collect()
+        );
 
         Ok(Array::from_parts(elements, dimensions))
     }
@@ -39,7 +49,8 @@ impl<T> FromSql for Array<T>
 }
 
 impl<T> ToSql for Array<T>
-    where T: ToSql
+where
+    T: ToSql,
 {
     fn to_sql(&self, ty: &Type, w: &mut Vec<u8>) -> Result<IsNull, Box<Error + Sync + Send>> {
         let element_type = match ty.kind() {
@@ -47,28 +58,26 @@ impl<T> ToSql for Array<T>
             _ => unreachable!(),
         };
 
-        let dimensions = self.dimensions()
-            .iter()
-            .map(|d| {
-                types::ArrayDimension {
-                    len: d.len,
-                    lower_bound: d.lower_bound,
-                }
-            });
+        let dimensions = self.dimensions().iter().map(|d| {
+            types::ArrayDimension {
+                len: d.len,
+                lower_bound: d.lower_bound,
+            }
+        });
         let elements = self.iter();
 
-        try!(types::array_to_sql(dimensions,
-                                 true,
-                                 element_type.oid(),
-                                 elements,
-                                 |v, w| {
-                                     match v.to_sql(element_type, w) {
-                                         Ok(IsNull::Yes) => Ok(postgres_protocol::IsNull::Yes),
-                                         Ok(IsNull::No) => Ok(postgres_protocol::IsNull::No),
-                                         Err(e) => Err(e),
-                                     }
-                                 },
-                                 w));
+        try!(types::array_to_sql(
+            dimensions,
+            true,
+            element_type.oid(),
+            elements,
+            |v, w| match v.to_sql(element_type, w) {
+                Ok(IsNull::Yes) => Ok(postgres_protocol::IsNull::Yes),
+                Ok(IsNull::No) => Ok(postgres_protocol::IsNull::No),
+                Err(e) => Err(e),
+            },
+            w,
+        ));
 
         Ok(IsNull::No)
     }
@@ -91,11 +100,15 @@ mod test {
     use postgres::types::{FromSql, ToSql};
     use Array;
 
-    fn test_type<T: PartialEq + FromSql + ToSql, S: fmt::Display>(sql_type: &str,
-                                                                  checks: &[(T, S)]) {
-        let conn = Connection::connect("postgres://postgres@localhost", TlsMode::None).unwrap();
+    fn test_type<T: PartialEq + FromSql + ToSql, S: fmt::Display>(
+        sql_type: &str,
+        checks: &[(T, S)],
+    ) {
+        let conn = Connection::connect("postgres://postgres:password@localhost", TlsMode::None)
+            .unwrap();
         for &(ref val, ref repr) in checks.iter() {
-            let stmt = conn.prepare(&format!("SELECT {}::{}", *repr, sql_type)).unwrap();
+            let stmt = conn.prepare(&format!("SELECT {}::{}", *repr, sql_type))
+                .unwrap();
             let result = stmt.query(&[]).unwrap().iter().next().unwrap().get(0);
             assert!(val == &result);
 
@@ -128,13 +141,15 @@ mod test {
 
     #[test]
     fn test_byteaarray_params() {
-        test_array_params!("BYTEA",
-                           vec![0u8, 1],
-                           r#""\\x0001""#,
-                           vec![254u8, 255u8],
-                           r#""\\xfeff""#,
-                           vec![10u8, 11u8],
-                           r#""\\x0a0b""#);
+        test_array_params!(
+            "BYTEA",
+            vec![0u8, 1],
+            r#""\\x0001""#,
+            vec![254u8, 255u8],
+            r#""\\xfeff""#,
+            vec![10u8, 11u8],
+            r#""\\x0a0b""#
+        );
     }
 
     #[test]
@@ -144,13 +159,15 @@ mod test {
 
     #[test]
     fn test_namearray_params() {
-        test_array_params!("NAME",
-                           "hello".to_string(),
-                           "hello",
-                           "world".to_string(),
-                           "world",
-                           "!".to_string(),
-                           "!");
+        test_array_params!(
+            "NAME",
+            "hello".to_string(),
+            "hello",
+            "world".to_string(),
+            "world",
+            "!".to_string(),
+            "!"
+        );
     }
 
     #[test]
@@ -165,35 +182,41 @@ mod test {
 
     #[test]
     fn test_textarray_params() {
-        test_array_params!("TEXT",
-                           "hello".to_string(),
-                           "hello",
-                           "world".to_string(),
-                           "world",
-                           "!".to_string(),
-                           "!");
+        test_array_params!(
+            "TEXT",
+            "hello".to_string(),
+            "hello",
+            "world".to_string(),
+            "world",
+            "!".to_string(),
+            "!"
+        );
     }
 
     #[test]
     fn test_charnarray_params() {
-        test_array_params!("CHAR(5)",
-                           "hello".to_string(),
-                           "hello",
-                           "world".to_string(),
-                           "world",
-                           "!    ".to_string(),
-                           "!");
+        test_array_params!(
+            "CHAR(5)",
+            "hello".to_string(),
+            "hello",
+            "world".to_string(),
+            "world",
+            "!    ".to_string(),
+            "!"
+        );
     }
 
     #[test]
     fn test_varchararray_params() {
-        test_array_params!("VARCHAR",
-                           "hello".to_string(),
-                           "hello",
-                           "world".to_string(),
-                           "world",
-                           "!".to_string(),
-                           "!");
+        test_array_params!(
+            "VARCHAR",
+            "hello".to_string(),
+            "hello",
+            "world".to_string(),
+            "world",
+            "!".to_string(),
+            "!"
+        );
     }
 
     #[test]
@@ -215,6 +238,11 @@ mod test {
     fn test_empty_array() {
         let conn = Connection::connect("postgres://postgres@localhost", TlsMode::None).unwrap();
         let stmt = conn.prepare("SELECT '{}'::INT4[]").unwrap();
-        stmt.query(&[]).unwrap().iter().next().unwrap().get::<_, Array<i32>>(0);
+        stmt.query(&[])
+            .unwrap()
+            .iter()
+            .next()
+            .unwrap()
+            .get::<_, Array<i32>>(0);
     }
 }

@@ -16,10 +16,12 @@ impl<T: fmt::Display> fmt::Display for Array<T> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         if self.dims.iter().any(|dim| dim.lower_bound != 1) {
             for dim in &self.dims {
-                try!(write!(fmt,
-                            "[{}:{}]",
-                            dim.lower_bound,
-                            dim.lower_bound + dim.len - 1));
+                try!(write!(
+                    fmt,
+                    "[{}:{}]",
+                    dim.lower_bound,
+                    dim.lower_bound + dim.len - 1
+                ));
             }
             try!(write!(fmt, "="));
         }
@@ -27,13 +29,15 @@ impl<T: fmt::Display> fmt::Display for Array<T> {
     }
 }
 
-fn fmt_helper<'a, T, I>(depth: usize,
-                        dims: &[Dimension],
-                        mut data: &mut I,
-                        fmt: &mut fmt::Formatter)
-                        -> fmt::Result
-    where I: Iterator<Item = &'a T>,
-          T: 'a + fmt::Display
+fn fmt_helper<'a, T, I>(
+    depth: usize,
+    dims: &[Dimension],
+    mut data: &mut I,
+    fmt: &mut fmt::Formatter,
+) -> fmt::Result
+where
+    I: Iterator<Item = &'a T>,
+    T: 'a + fmt::Display,
 {
     if depth == dims.len() {
         return write!(fmt, "{}", data.next().unwrap());
@@ -60,9 +64,11 @@ impl<T> Array<T> {
     /// Panics if the number of elements provided does not match the number of
     /// elements specified by the dimensions.
     pub fn from_parts(data: Vec<T>, dimensions: Vec<Dimension>) -> Array<T> {
-        assert!((data.is_empty() && dimensions.is_empty()) ||
+        assert!(
+            (data.is_empty() && dimensions.is_empty()) ||
                 data.len() as i32 == dimensions.iter().fold(1, |acc, i| acc * i.len),
-                "size mismatch");
+            "size mismatch"
+        );
         Array {
             dims: dimensions,
             data: data,
@@ -72,10 +78,12 @@ impl<T> Array<T> {
     /// Creates a new one-dimensional array.
     pub fn from_vec(data: Vec<T>, lower_bound: i32) -> Array<T> {
         Array {
-            dims: vec![Dimension {
-                           len: data.len() as i32,
-                           lower_bound: lower_bound,
-                       }],
+            dims: vec![
+                Dimension {
+                    len: data.len() as i32,
+                    lower_bound: lower_bound,
+                },
+            ],
             data: data,
         }
     }
@@ -85,11 +93,13 @@ impl<T> Array<T> {
     /// For example, the one dimensional array `[1, 2]` would turn into the
     /// two-dimensional array `[[1, 2]]`.
     pub fn wrap(&mut self, lower_bound: i32) {
-        self.dims.insert(0,
-                         Dimension {
-                             len: 1,
-                             lower_bound: lower_bound,
-                         });
+        self.dims.insert(
+            0,
+            Dimension {
+                len: 1,
+                lower_bound: lower_bound,
+            },
+        );
     }
 
     /// Consumes another array, appending it to the top level dimension of this
@@ -106,8 +116,10 @@ impl<T> Array<T> {
     ///
     /// Panics if the dimensions of the two arrays do not match.
     pub fn push(&mut self, other: Array<T>) {
-        assert!(self.dims.len() - 1 == other.dims.len(),
-                "cannot append differently shaped arrays");
+        assert!(
+            self.dims.len() - 1 == other.dims.len(),
+            "cannot append differently shaped arrays"
+        );
         for (dim1, dim2) in self.dims.iter().skip(1).zip(other.dims.iter()) {
             assert!(dim1 == dim2, "cannot append differently shaped arrays");
         }
@@ -196,8 +208,27 @@ tuple_impl!(a: i32, b: i32, c: i32, d: i32);
 tuple_impl!(a: i32, b: i32, c: i32, d: i32, e: i32);
 tuple_impl!(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32);
 tuple_impl!(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32);
-tuple_impl!(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32, h: i32);
-tuple_impl!(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32, h: i32, i: i32);
+tuple_impl!(
+    a: i32,
+    b: i32,
+    c: i32,
+    d: i32,
+    e: i32,
+    f: i32,
+    g: i32,
+    h: i32
+);
+tuple_impl!(
+    a: i32,
+    b: i32,
+    c: i32,
+    d: i32,
+    e: i32,
+    f: i32,
+    g: i32,
+    h: i32,
+    i: i32
+);
 
 /// Indexes into the `Array`, retrieving a reference to the contained
 /// value.
