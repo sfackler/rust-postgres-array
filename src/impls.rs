@@ -1,5 +1,5 @@
 use fallible_iterator::FallibleIterator;
-use postgres::types::{Type, Kind, ToSql, FromSql, IsNull};
+use postgres_shared::types::{Type, Kind, ToSql, FromSql, IsNull};
 use postgres_protocol::types;
 use postgres_protocol;
 use std::error::Error;

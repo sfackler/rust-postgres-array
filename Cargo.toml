@@ -9,5 +9,8 @@ documentation = "https://docs.rs/postgres_array/0.8.0/postgres_array"
 
 [dependencies]
 fallible-iterator = "0.1"
-postgres = "0.14"
+postgres-shared = "0.4"
 postgres-protocol = "0.3"
+
+[dev-dependencies]
+postgres = "0.15"

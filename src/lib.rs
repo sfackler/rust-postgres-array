@@ -3,8 +3,11 @@
 
 extern crate fallible_iterator;
 #[macro_use]
-extern crate postgres;
+extern crate postgres_shared;
 extern crate postgres_protocol;
+
+#[cfg(test)]
+extern crate postgres;
 
 #[doc(inline)]
 pub use array::Array;
