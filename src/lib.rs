@@ -1,5 +1,5 @@
 //! Multi-dimensional arrays with per-dimension specifiable lower bounds
-#![doc(html_root_url = "https://docs.rs/postgres_array/0.9.0")]
+#![doc(html_root_url = "https://docs.rs/postgres_array/0.10")]
 
 #[doc(inline)]
 pub use crate::array::Array;
