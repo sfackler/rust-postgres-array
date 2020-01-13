@@ -1,10 +1,9 @@
 version: 2
 jobs:
   build:
-    working_directory: ~/build
     docker:
-      - image: jimmycuadra/rust:1.19.0
-      - image: postgres:9.6
+      - image: rust:1.40.0
+      - image: postgres:12
         environment:
           POSTGRES_PASSWORD: password
     steps:
@@ -15,12 +14,12 @@ jobs:
       - save_cache:
           key: registry-{{ epoch }}
           paths:
-            - ~/.cargo/registry/index
+            - /usr/local/cargo/registry/index
       - restore_cache:
-          key: dependencies-1.19-{{ checksum "Cargo.lock" }}
+          key: dependencies-1.40-{{ checksum "Cargo.lock" }}
       - run: cargo test
       - save_cache:
-          key: dependencies-1.19-{{ checksum "Cargo.lock" }}
+          key: dependencies-1.40-{{ checksum "Cargo.lock" }}
           paths:
             - target
-            - ~/.cargo/registry/cache
+            - /usr/local/cargo/registry/cache

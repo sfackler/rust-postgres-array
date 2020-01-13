@@ -1,17 +1,17 @@
 use fallible_iterator::FallibleIterator;
 use postgres_protocol;
 use postgres_protocol::types;
-use postgres_shared::to_sql_checked;
-use postgres_shared::types::{FromSql, IsNull, Kind, ToSql, Type};
+use postgres_types::{to_sql_checked, FromSql, IsNull, Kind, ToSql, Type};
 use std::error::Error;
 
 use crate::{Array, Dimension};
+use postgres_types::private::BytesMut;
 
-impl<T> FromSql for Array<T>
+impl<'de, T> FromSql<'de> for Array<T>
 where
-    T: FromSql,
+    T: FromSql<'de>,
 {
-    fn from_sql(ty: &Type, raw: &[u8]) -> Result<Array<T>, Box<dyn Error + Sync + Send>> {
+    fn from_sql(ty: &Type, raw: &'de [u8]) -> Result<Array<T>, Box<dyn Error + Sync + Send>> {
         let element_type = match *ty.kind() {
             Kind::Array(ref ty) => ty,
             _ => unreachable!(),
@@ -21,15 +21,17 @@ where
 
         let dimensions = array
             .dimensions()
-            .map(|d| Dimension {
-                len: d.len,
-                lower_bound: d.lower_bound,
+            .map(|d| {
+                Ok(Dimension {
+                    len: d.len,
+                    lower_bound: d.lower_bound,
+                })
             })
             .collect()?;
 
         let elements = array
             .values()
-            .and_then(|v| FromSql::from_sql_nullable(element_type, v))
+            .map(|v| FromSql::from_sql_nullable(element_type, v))
             .collect()?;
 
         Ok(Array::from_parts(elements, dimensions))
@@ -47,7 +49,7 @@ impl<T> ToSql for Array<T>
 where
     T: ToSql,
 {
-    fn to_sql(&self, ty: &Type, w: &mut Vec<u8>) -> Result<IsNull, Box<dyn Error + Sync + Send>> {
+    fn to_sql(&self, ty: &Type, w: &mut BytesMut) -> Result<IsNull, Box<dyn Error + Sync + Send>> {
         let element_type = match ty.kind() {
             &Kind::Array(ref ty) => ty,
             _ => unreachable!(),
@@ -61,7 +63,6 @@ where
 
         types::array_to_sql(
             dimensions,
-            true,
             element_type.oid(),
             elements,
             |v, w| match v.to_sql(element_type, w) {
@@ -90,24 +91,25 @@ mod test {
     use std::fmt;
 
     use crate::Array;
-    use postgres::types::{FromSql, ToSql};
-    use postgres::{Connection, TlsMode};
+    use postgres::types::{FromSqlOwned, ToSql};
+    use postgres::{Client, NoTls};
 
-    fn test_type<T: PartialEq + FromSql + ToSql, S: fmt::Display>(
+    fn test_type<T: PartialEq + FromSqlOwned + ToSql + Sync, S: fmt::Display>(
         sql_type: &str,
         checks: &[(T, S)],
     ) {
-        let conn =
-            Connection::connect("postgres://postgres:password@localhost", TlsMode::None).unwrap();
+        let mut conn = Client::connect("postgres://postgres:password@localhost", NoTls).unwrap();
         for &(ref val, ref repr) in checks.iter() {
-            let stmt = conn
-                .prepare(&format!("SELECT {}::{}", *repr, sql_type))
-                .unwrap();
-            let result = stmt.query(&[]).unwrap().iter().next().unwrap().get(0);
+            let result = conn
+                .query(&*format!("SELECT {}::{}", *repr, sql_type), &[])
+                .unwrap()[0]
+                .get(0);
             assert!(val == &result);
 
-            let stmt = conn.prepare(&format!("SELECT $1::{}", sql_type)).unwrap();
-            let result = stmt.query(&[val]).unwrap().iter().next().unwrap().get(0);
+            let result = conn
+                .query(&*format!("SELECT $1::{}", sql_type), &[val])
+                .unwrap()[0]
+                .get(0);
             assert!(val == &result);
         }
     }
@@ -235,13 +237,7 @@ mod test {
 
     #[test]
     fn test_empty_array() {
-        let conn = Connection::connect("postgres://postgres@localhost", TlsMode::None).unwrap();
-        let stmt = conn.prepare("SELECT '{}'::INT4[]").unwrap();
-        stmt.query(&[])
-            .unwrap()
-            .iter()
-            .next()
-            .unwrap()
-            .get::<_, Array<i32>>(0);
+        let mut conn = Client::connect("postgres://postgres@localhost", NoTls).unwrap();
+        conn.query("SELECT '{}'::INT4[]", &[]).unwrap()[0].get::<_, Array<i32>>(0);
     }
 }
