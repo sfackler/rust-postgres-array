@@ -1,9 +1,9 @@
+use std::fmt;
 use std::ops::{Index, IndexMut};
 use std::slice;
 use std::vec;
-use std::fmt;
 
-use Dimension;
+use crate::Dimension;
 
 /// A multi-dimensional array.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -13,17 +13,17 @@ pub struct Array<T> {
 }
 
 impl<T: fmt::Display> fmt::Display for Array<T> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.dims.iter().any(|dim| dim.lower_bound != 1) {
             for dim in &self.dims {
-                try!(write!(
+                write!(
                     fmt,
                     "[{}:{}]",
                     dim.lower_bound,
                     dim.lower_bound + dim.len - 1
-                ));
+                )?;
             }
-            try!(write!(fmt, "="));
+            write!(fmt, "=")?;
         }
         fmt_helper(0, &self.dims, &mut self.data.iter(), fmt)
     }
@@ -32,8 +32,8 @@ impl<T: fmt::Display> fmt::Display for Array<T> {
 fn fmt_helper<'a, T, I>(
     depth: usize,
     dims: &[Dimension],
-    mut data: &mut I,
-    fmt: &mut fmt::Formatter,
+    data: &mut I,
+    fmt: &mut fmt::Formatter<'_>,
 ) -> fmt::Result
 where
     I: Iterator<Item = &'a T>,
@@ -43,12 +43,12 @@ where
         return write!(fmt, "{}", data.next().unwrap());
     }
 
-    try!(write!(fmt, "{{"));
+    write!(fmt, "{{")?;
     for i in 0..dims[depth].len {
         if i != 0 {
-            try!(write!(fmt, ","));
+            write!(fmt, ",")?;
         }
-        try!(fmt_helper(depth + 1, dims, data, fmt));
+        fmt_helper(depth + 1, dims, data, fmt)?;
     }
     write!(fmt, "}}")
 }
@@ -65,26 +65,24 @@ impl<T> Array<T> {
     /// elements specified by the dimensions.
     pub fn from_parts(data: Vec<T>, dimensions: Vec<Dimension>) -> Array<T> {
         assert!(
-            (data.is_empty() && dimensions.is_empty()) ||
-                data.len() as i32 == dimensions.iter().fold(1, |acc, i| acc * i.len),
+            (data.is_empty() && dimensions.is_empty())
+                || data.len() as i32 == dimensions.iter().fold(1, |acc, i| acc * i.len),
             "size mismatch"
         );
         Array {
             dims: dimensions,
-            data: data,
+            data,
         }
     }
 
     /// Creates a new one-dimensional array.
     pub fn from_vec(data: Vec<T>, lower_bound: i32) -> Array<T> {
         Array {
-            dims: vec![
-                Dimension {
-                    len: data.len() as i32,
-                    lower_bound: lower_bound,
-                },
-            ],
-            data: data,
+            dims: vec![Dimension {
+                len: data.len() as i32,
+                lower_bound,
+            }],
+            data,
         }
     }
 
@@ -97,7 +95,7 @@ impl<T> Array<T> {
             0,
             Dimension {
                 len: 1,
-                lower_bound: lower_bound,
+                lower_bound,
             },
         );
     }
@@ -147,14 +145,18 @@ impl<T> Array<T> {
 
     /// Returns an iterator over references to the elements of the array in the
     /// higher-dimensional equivalent of row-major order.
-    pub fn iter<'a>(&'a self) -> Iter<'a, T> {
-        Iter { inner: self.data.iter() }
+    pub fn iter(&self) -> Iter<'_, T> {
+        Iter {
+            inner: self.data.iter(),
+        }
     }
 
     /// Returns an iterator over mutable references to the elements of the
     /// array in the higher-dimensional equivalent of row-major order.
-    pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, T> {
-        IterMut { inner: self.data.iter_mut() }
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+        IterMut {
+            inner: self.data.iter_mut(),
+        }
     }
 
     /// Returns the underlying data vector for this Array in the
@@ -293,13 +295,15 @@ impl<T> IntoIterator for Array<T> {
     type IntoIter = IntoIter<T>;
 
     fn into_iter(self) -> IntoIter<T> {
-        IntoIter { inner: self.data.into_iter() }
+        IntoIter {
+            inner: self.data.into_iter(),
+        }
     }
 }
 
 /// An iterator over references to values of an `Array` in the
 /// higher-dimensional equivalent of row-major order.
-pub struct Iter<'a, T: 'a> {
+pub struct Iter<'a, T> {
     inner: slice::Iter<'a, T>,
 }
 
@@ -329,7 +333,7 @@ impl<'a, T: 'a> ExactSizeIterator for Iter<'a, T> {
 
 /// An iterator over mutable references to values of an `Array` in the
 /// higher-dimensional equivalent of row-major order.
-pub struct IterMut<'a, T: 'a> {
+pub struct IterMut<'a, T> {
     inner: slice::IterMut<'a, T>,
 }
 

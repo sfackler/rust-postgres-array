@@ -1,16 +1,8 @@
 //! Multi-dimensional arrays with per-dimension specifiable lower bounds
-#![doc(html_root_url="https://docs.rs/postgres_array/0.9.0")]
-
-extern crate fallible_iterator;
-#[macro_use]
-extern crate postgres_shared;
-extern crate postgres_protocol;
-
-#[cfg(test)]
-extern crate postgres;
+#![doc(html_root_url = "https://docs.rs/postgres_array/0.9.0")]
 
 #[doc(inline)]
-pub use array::Array;
+pub use crate::array::Array;
 
 pub mod array;
 mod impls;
@@ -47,13 +39,11 @@ mod tests {
     fn test_from_vec() {
         let a = Array::from_vec(vec![0i32, 1, 2], -1);
         assert!(
-            &[
-                Dimension {
-                    len: 3,
-                    lower_bound: -1,
-                },
-            ]
-                [..] == a.dimensions()
+            &[Dimension {
+                len: 3,
+                lower_bound: -1,
+            },][..]
+                == a.dimensions()
         );
         assert_eq!(0, a[-1]);
         assert_eq!(1, a[0]);

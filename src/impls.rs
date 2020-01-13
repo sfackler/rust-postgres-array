@@ -1,41 +1,36 @@
 use fallible_iterator::FallibleIterator;
-use postgres_shared::types::{Type, Kind, ToSql, FromSql, IsNull};
-use postgres_protocol::types;
 use postgres_protocol;
+use postgres_protocol::types;
+use postgres_shared::to_sql_checked;
+use postgres_shared::types::{FromSql, IsNull, Kind, ToSql, Type};
 use std::error::Error;
 
-use {Array, Dimension};
+use crate::{Array, Dimension};
 
 impl<T> FromSql for Array<T>
 where
     T: FromSql,
 {
-    fn from_sql(ty: &Type, raw: &[u8]) -> Result<Array<T>, Box<Error + Sync + Send>> {
+    fn from_sql(ty: &Type, raw: &[u8]) -> Result<Array<T>, Box<dyn Error + Sync + Send>> {
         let element_type = match *ty.kind() {
             Kind::Array(ref ty) => ty,
             _ => unreachable!(),
         };
 
-        let array = try!(types::array_from_sql(raw));
+        let array = types::array_from_sql(raw)?;
 
-        let dimensions = try!(
-            array
-                .dimensions()
-                .map(|d| {
-                    Dimension {
-                        len: d.len,
-                        lower_bound: d.lower_bound,
-                    }
-                })
-                .collect()
-        );
+        let dimensions = array
+            .dimensions()
+            .map(|d| Dimension {
+                len: d.len,
+                lower_bound: d.lower_bound,
+            })
+            .collect()?;
 
-        let elements = try!(
-            array
-                .values()
-                .and_then(|v| FromSql::from_sql_nullable(element_type, v))
-                .collect()
-        );
+        let elements = array
+            .values()
+            .and_then(|v| FromSql::from_sql_nullable(element_type, v))
+            .collect()?;
 
         Ok(Array::from_parts(elements, dimensions))
     }
@@ -52,21 +47,19 @@ impl<T> ToSql for Array<T>
 where
     T: ToSql,
 {
-    fn to_sql(&self, ty: &Type, w: &mut Vec<u8>) -> Result<IsNull, Box<Error + Sync + Send>> {
+    fn to_sql(&self, ty: &Type, w: &mut Vec<u8>) -> Result<IsNull, Box<dyn Error + Sync + Send>> {
         let element_type = match ty.kind() {
             &Kind::Array(ref ty) => ty,
             _ => unreachable!(),
         };
 
-        let dimensions = self.dimensions().iter().map(|d| {
-            types::ArrayDimension {
-                len: d.len,
-                lower_bound: d.lower_bound,
-            }
+        let dimensions = self.dimensions().iter().map(|d| types::ArrayDimension {
+            len: d.len,
+            lower_bound: d.lower_bound,
         });
         let elements = self.iter();
 
-        try!(types::array_to_sql(
+        types::array_to_sql(
             dimensions,
             true,
             element_type.oid(),
@@ -77,7 +70,7 @@ where
                 Err(e) => Err(e),
             },
             w,
-        ));
+        )?;
 
         Ok(IsNull::No)
     }
@@ -96,18 +89,19 @@ where
 mod test {
     use std::fmt;
 
-    use postgres::{Connection, TlsMode};
+    use crate::Array;
     use postgres::types::{FromSql, ToSql};
-    use Array;
+    use postgres::{Connection, TlsMode};
 
     fn test_type<T: PartialEq + FromSql + ToSql, S: fmt::Display>(
         sql_type: &str,
         checks: &[(T, S)],
     ) {
-        let conn = Connection::connect("postgres://postgres:password@localhost", TlsMode::None)
-            .unwrap();
+        let conn =
+            Connection::connect("postgres://postgres:password@localhost", TlsMode::None).unwrap();
         for &(ref val, ref repr) in checks.iter() {
-            let stmt = conn.prepare(&format!("SELECT {}::{}", *repr, sql_type))
+            let stmt = conn
+                .prepare(&format!("SELECT {}::{}", *repr, sql_type))
                 .unwrap();
             let result = stmt.query(&[]).unwrap().iter().next().unwrap().get(0);
             assert!(val == &result);
@@ -119,19 +113,24 @@ mod test {
     }
 
     macro_rules! test_array_params {
-        ($name:expr, $v1:expr, $s1:expr, $v2:expr, $s2:expr, $v3:expr, $s3:expr) => ({
-
-            let tests = &[(Some(Array::from_vec(vec!(Some($v1), Some($v2), None), 1)),
-                          format!("'{{{},{},NULL}}'", $s1, $s2)),
-                         (None, "NULL".to_string())];
+        ($name:expr, $v1:expr, $s1:expr, $v2:expr, $s2:expr, $v3:expr, $s3:expr) => {{
+            let tests = &[
+                (
+                    Some(Array::from_vec(vec![Some($v1), Some($v2), None], 1)),
+                    format!("'{{{},{},NULL}}'", $s1, $s2),
+                ),
+                (None, "NULL".to_string()),
+            ];
             test_type(&format!("{}[]", $name), tests);
-            let mut a = Array::from_vec(vec!(Some($v1), Some($v2)), 0);
+            let mut a = Array::from_vec(vec![Some($v1), Some($v2)], 0);
             a.wrap(-1);
-            a.push(Array::from_vec(vec!(None, Some($v3)), 0));
-            let tests = &[(Some(a), format!("'[-1:0][0:1]={{{{{},{}}},{{NULL,{}}}}}'",
-                                           $s1, $s2, $s3))];
+            a.push(Array::from_vec(vec![None, Some($v3)], 0));
+            let tests = &[(
+                Some(a),
+                format!("'[-1:0][0:1]={{{{{},{}}},{{NULL,{}}}}}'", $s1, $s2, $s3),
+            )];
             test_type(&format!("{}[][]", $name), tests);
-        })
+        }};
     }
 
     #[test]
