@@ -39,6 +39,10 @@ where
     I: Iterator<Item = &'a T>,
     T: 'a + fmt::Display,
 {
+    if dims.len() == 0 {
+        return write!(fmt, "{{}}");
+    }
+
     if depth == dims.len() {
         return write!(fmt, "{}", data.next().unwrap());
     }
