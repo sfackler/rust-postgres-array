@@ -146,5 +146,8 @@ mod tests {
         a.push(Array::from_vec(vec![4, 5, 6], 3));
         a.wrap(1);
         assert_eq!("[1:1][-2:-1][3:5]={{{1,2,3},{4,5,6}}}", &format!("{}", a));
+
+        let a: Array<String> = Array::from_parts(vec![], vec![]);
+        assert_eq!("{}", &format!("{}", a));
     }
 }
